@@ -966,3 +966,326 @@ body.force-mobile-view .mobile-bottom-nav {
 .bottom-nav-tab.active .b-nav-icon {
     transform: translateY(-1px);
 }
+
+/* ================= TATKAL COUNTDOWN & PREPARATION ================= */
+.m-countdown-card {
+    background: linear-gradient(135deg, #141f32, #18202d);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.m-countdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.m-countdown-title {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.m-quota-badge-pill {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fef08a;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+.m-countdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.m-digit-box {
+    background: #0f1522;
+    border: 1px solid var(--m-border);
+    border-radius: 6px;
+    padding: 8px 4px;
+    text-align: center;
+}
+
+.m-digit-val {
+    font-family: var(--font-mono, monospace);
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: #60a5fa;
+    line-height: 1.1;
+}
+
+.m-digit-lbl {
+    font-size: 0.65rem;
+    color: var(--m-text-dim);
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.m-countdown-msg {
+    font-size: 0.82rem;
+    color: var(--m-text-muted);
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* ================= PASSENGER MANAGEMENT & ALL DETAILS TEXT AREA ================= */
+.m-pax-count-badge {
+    background: #1e3a8a;
+    color: #93c5fd;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.m-passenger-card {
+    background: var(--m-bg-card);
+    border: 1px solid var(--m-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+.m-pax-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.m-pax-name {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.m-pax-meta {
+    font-size: 0.82rem;
+    color: var(--m-text-muted);
+}
+
+.m-pax-badges-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.m-pax-badge {
+    background: #1e2637;
+    border: 1px solid var(--m-border);
+    color: #e2e8f0;
+    font-size: 0.74rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.m-pax-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.m-btn-mini {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--m-border);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.m-btn-mini:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+/* Dedicated All Details Text Area */
+.m-textarea-card {
+    background: var(--m-bg-card);
+    border: 1px solid var(--m-border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.m-textarea-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.m-format-pills {
+    display: flex;
+    gap: 4px;
+    background: #0f1522;
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid var(--m-border);
+}
+
+.m-fmt-pill {
+    background: none;
+    border: none;
+    color: var(--m-text-dim);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.m-fmt-pill.active {
+    background: #2563eb;
+    color: #fff;
+}
+
+.m-details-textarea {
+    width: 100%;
+    height: 120px;
+    background: #0a0e17;
+    border: 1px solid var(--m-border);
+    border-radius: 6px;
+    color: #93c5fd;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    line-height: 1.45;
+    padding: 10px;
+    box-sizing: border-box;
+    resize: vertical;
+    outline: none;
+}
+
+.m-textarea-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* Checklist items on mobile */
+.m-checklist-card {
+    background: var(--m-bg-card);
+    border: 1px solid var(--m-border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.m-check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+}
+
+.m-check-row:last-child {
+    border-bottom: none;
+}
+
+.m-checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #64748b;
+    border-radius: 4px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.m-check-row.checked .m-checkbox-custom {
+    background: var(--m-green);
+    border-color: var(--m-green);
+    color: #fff;
+}
+
+.m-check-text {
+    font-size: 0.88rem;
+    color: #e2e8f0;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.m-check-row.checked .m-check-text {
+    text-decoration: line-through;
+    color: var(--m-text-dim);
+}
+
+/* Split Route Cards */
+.m-split-route-card {
+    background: var(--m-bg-card);
+    border: 1px solid var(--m-border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.m-split-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.m-junction-tag {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fef08a;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.m-split-legs-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #0f1522;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.m-split-leg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #f1f5f9;
+}
+
+.m-layover-tag {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #f59e0b;
+    font-weight: 600;
+    padding: 2px 0;
+    border-top: 1px dashed rgba(245, 158, 11, 0.3);
+    border-bottom: 1px dashed rgba(245, 158, 11, 0.3);
+    margin: 2px 0;
+}
+
