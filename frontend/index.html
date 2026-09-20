@@ -41,19 +41,27 @@
             </div>
         </header>
 
-        <!-- Top-Level Multi-Tab Navigation Bar -->
-        <nav class="navbar" id="main-nav" aria-label="Main Navigation">
-            <button class="nav-tab active" data-view="dashboard" id="tab-dashboard">🏠 Dashboard</button>
-            <button class="nav-tab" data-view="train-search" id="tab-train-search">🔍 Train Search</button>
-            <button class="nav-tab" data-view="train-details" id="tab-train-details">🚆 Train Details</button>
-            <button class="nav-tab" data-view="running-status" id="tab-running-status">📍 Running Status</button>
-            <button class="nav-tab" data-view="route-timeline" id="tab-route-timeline">🗺️ Route</button>
-            <button class="nav-tab" data-view="journey-planner" id="tab-journey-planner">🧭 Journey Planner</button>
-            <button class="nav-tab" data-view="tatkal-prep" id="tab-tatkal-prep">⚡ Tatkal Preparation</button>
-            <button class="nav-tab" data-view="passengers" id="tab-passengers">👥 Passenger Details</button>
-            <button class="nav-tab" data-view="notifications" id="tab-notifications">🔔 Notifications</button>
-            <button class="nav-tab" data-view="settings" id="tab-settings">⚙️ Settings</button>
-        </nav>
+        <!-- Top-Level Multi-Tab Navigation Bar with Scroll Support -->
+        <div class="navbar-wrapper">
+            <button class="nav-scroll-btn" id="nav-scroll-left" aria-label="Scroll Tabs Left" title="Scroll left">
+                <span>◀</span>
+            </button>
+            <nav class="navbar" id="main-nav" aria-label="Main Navigation">
+                <button class="nav-tab active" data-view="dashboard" id="tab-dashboard">🏠 Dashboard</button>
+                <button class="nav-tab" data-view="train-search" id="tab-train-search">🔍 Train Search</button>
+                <button class="nav-tab" data-view="train-details" id="tab-train-details">🚆 Train Details</button>
+                <button class="nav-tab" data-view="running-status" id="tab-running-status">📍 Running Status</button>
+                <button class="nav-tab" data-view="route-timeline" id="tab-route-timeline">🗺️ Route</button>
+                <button class="nav-tab" data-view="journey-planner" id="tab-journey-planner">🧭 Journey Planner</button>
+                <button class="nav-tab" data-view="tatkal-prep" id="tab-tatkal-prep">⚡ Tatkal Preparation</button>
+                <button class="nav-tab" data-view="passengers" id="tab-passengers">👥 Passenger Details</button>
+                <button class="nav-tab" data-view="notifications" id="tab-notifications">🔔 Notifications</button>
+                <button class="nav-tab" data-view="settings" id="tab-settings">⚙️ Settings</button>
+            </nav>
+            <button class="nav-scroll-btn" id="nav-scroll-right" aria-label="Scroll Tabs Right" title="Scroll right">
+                <span>▶</span>
+            </button>
+        </div>
 
         <!-- ================= VIEW 1: DASHBOARD ================= -->
         <div class="view-panel active" id="view-dashboard">

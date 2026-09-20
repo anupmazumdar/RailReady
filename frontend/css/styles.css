@@ -126,6 +126,142 @@ body {
     box-shadow: 0 0 10px var(--accent-glow);
 }
 
+/* ================= TOP NAVIGATION BAR ================= */
+.navbar-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scroll-behavior: smooth;
+    padding: 8px 10px;
+    background: rgba(18, 26, 43, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.5) rgba(15, 23, 42, 0.6);
+}
+
+/* Sleek custom scrollbar for horizontal navigation */
+.navbar::-webkit-scrollbar {
+    height: 6px;
+}
+
+.navbar::-webkit-scrollbar-track {
+    background: rgba(11, 15, 25, 0.6);
+    border-radius: 999px;
+}
+
+.navbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 999px;
+}
+
+.navbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, #60a5fa, #34d399);
+}
+
+/* Nav Tabs */
+.nav-tab {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    font-family: var(--font-sans);
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+}
+
+.nav-tab:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.nav-tab.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(16, 185, 129, 0.15));
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
+    font-weight: 600;
+}
+
+/* Nav Scroll Arrow Buttons */
+.nav-scroll-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.nav-scroll-btn:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    color: var(--text-main);
+    border-color: var(--primary);
+    transform: scale(1.05);
+}
+
+.nav-scroll-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* View Panels */
+.view-panel {
+    display: none;
+    animation: fadeInView 0.25s ease-out;
+}
+
+.view-panel.active {
+    display: block;
+}
+
+@keyframes fadeInView {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Grid Layout */
 .dashboard-grid {
     display: grid;

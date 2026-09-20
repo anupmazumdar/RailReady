@@ -56,6 +56,12 @@ window.switchView = function(viewName) {
     document.querySelectorAll(".nav-tab").forEach(tab => {
         if (tab.getAttribute("data-view") === viewName) {
             tab.classList.add("active");
+            // Auto scroll the selected tab into view smoothly
+            try {
+                tab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+            } catch (e) {
+                // fallback if scrollIntoView options unsupported
+            }
         } else {
             tab.classList.remove("active");
         }
@@ -74,12 +80,62 @@ window.switchView = function(viewName) {
 };
 
 function setupNavigation() {
+    const mainNav = document.getElementById("main-nav");
+    const scrollLeftBtn = document.getElementById("nav-scroll-left");
+    const scrollRightBtn = document.getElementById("nav-scroll-right");
+
     document.querySelectorAll(".nav-tab").forEach(tab => {
         tab.addEventListener("click", () => {
             const targetView = tab.getAttribute("data-view");
             if (targetView) switchView(targetView);
         });
     });
+
+    // Mouse wheel horizontal scrolling over navbar
+    if (mainNav) {
+        mainNav.addEventListener("wheel", (evt) => {
+            if (evt.deltaY !== 0) {
+                evt.preventDefault();
+                mainNav.scrollLeft += evt.deltaY;
+            }
+        }, { passive: false });
+    }
+
+    // Scroll Arrow Controls
+    if (scrollLeftBtn && mainNav) {
+        scrollLeftBtn.addEventListener("click", () => {
+            mainNav.scrollBy({ left: -220, behavior: "smooth" });
+        });
+    }
+
+    if (scrollRightBtn && mainNav) {
+        scrollRightBtn.addEventListener("click", () => {
+            mainNav.scrollBy({ left: 220, behavior: "smooth" });
+        });
+    }
+
+    // Update arrow states based on scroll position
+    function updateNavScrollButtons() {
+        if (!mainNav || !scrollLeftBtn || !scrollRightBtn) return;
+        const isOverflowing = mainNav.scrollWidth > mainNav.clientWidth + 2;
+        if (!isOverflowing) {
+            scrollLeftBtn.style.opacity = "0.3";
+            scrollLeftBtn.disabled = true;
+            scrollRightBtn.style.opacity = "0.3";
+            scrollRightBtn.disabled = true;
+            return;
+        }
+        scrollLeftBtn.disabled = mainNav.scrollLeft <= 5;
+        scrollRightBtn.disabled = (mainNav.scrollLeft + mainNav.clientWidth) >= (mainNav.scrollWidth - 5);
+        scrollLeftBtn.style.opacity = scrollLeftBtn.disabled ? "0.3" : "1";
+        scrollRightBtn.style.opacity = scrollRightBtn.disabled ? "0.3" : "1";
+    }
+
+    if (mainNav) {
+        mainNav.addEventListener("scroll", updateNavScrollButtons);
+        window.addEventListener("resize", updateNavScrollButtons);
+        setTimeout(updateNavScrollButtons, 150);
+    }
 }
 
 // Setup Event Listeners
