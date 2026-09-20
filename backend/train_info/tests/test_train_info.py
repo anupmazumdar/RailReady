@@ -45,6 +45,26 @@ def test_train_search_by_station_pair(mock_provider):
     assert jp_results[0].train_number == "12956"
 
 
+def test_auto_find_trains_all_categories_by_route(mock_provider):
+    # Route search with only route details (NDLS -> BCT)
+    results = mock_provider.search_trains(from_station="NDLS", to_station="BCT")
+    assert len(results) >= 4
+    types = {r.train_type for r in results}
+    assert "Rajdhani" in types
+    assert "Special" in types
+    assert any(t in types for t in ["Mail/Express", "Superfast"])
+    assert "Passenger" in types
+
+    # Arbitrary route search with zero manual train details (MAS to SBC)
+    sbc_results = mock_provider.search_trains(from_station="MAS", to_station="SBC")
+    assert len(sbc_results) >= 4
+    sbc_types = {r.train_type for r in sbc_results}
+    assert "Rajdhani" in sbc_types
+    assert "Special" in sbc_types
+    assert "Mail/Express" in sbc_types
+    assert "Passenger" in sbc_types
+
+
 def test_train_details(mock_provider):
     details = mock_provider.get_train_details("12952")
     assert details is not None
@@ -135,6 +155,25 @@ def test_api_train_info_endpoints(client):
     assert "last_updated" in status_data
     assert "NTES" in status_data["source_attribution"]
 
-    # 5. Non-existent train returns 404
+    # 5. Route search with only stations (NDLS -> BCT)
+    res_route_search = client.get("/api/trains/search?from_station=NDLS&to_station=BCT")
+    assert res_route_search.status_code == 200
+    all_route_trains = res_route_search.json()
+    assert len(all_route_trains) >= 4
+    categories = {t["train_type"] for t in all_route_trains}
+    assert "Rajdhani" in categories
+    assert "Special" in categories
+    assert any("Mail" in c or "Express" in c or "Superfast" in c for c in categories)
+    assert any("Passenger" in c or "Local" in c for c in categories)
+
+    # 6. Category query param filtering
+    res_spec = client.get("/api/trains/search?from_station=NDLS&to_station=BCT&train_type=Special")
+    assert res_spec.status_code == 200
+    spec_trains = res_spec.json()
+    assert len(spec_trains) >= 1
+    assert all(t["train_type"] == "Special" for t in spec_trains)
+
+    # 7. Non-existent train returns 404
     res_404 = client.get("/api/trains/99999")
     assert res_404.status_code == 404
+

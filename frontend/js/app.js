@@ -4,6 +4,10 @@ let openingTimeIso = null;
 let countdownInterval = null;
 let notifiedMilestones = new Set();
 let currentView = "dashboard";
+let lastSearchResults = [];
+let currentSearchCategory = "ALL";
+let jpAutoDiscoveredTrains = [];
+let currentJpCategory = "ALL";
 
 // Initialize on DOM Load
 document.addEventListener("DOMContentLoaded", () => {
@@ -144,6 +148,78 @@ function setupEventListeners() {
     const btnSearch = document.getElementById("btn-execute-search");
     if (btnSearch) btnSearch.addEventListener("click", handleTrainSearch);
 
+    // Category Filter Pills - Train Search
+    document.querySelectorAll("#search-category-filters .category-pill").forEach(pill => {
+        pill.addEventListener("click", () => {
+            document.querySelectorAll("#search-category-filters .category-pill").forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+            currentSearchCategory = pill.getAttribute("data-cat") || "ALL";
+            renderSearchResults();
+        });
+    });
+
+    // Category Filter Pills - Journey Planner
+    document.querySelectorAll("#jp-category-filters .category-pill").forEach(pill => {
+        pill.addEventListener("click", () => {
+            document.querySelectorAll("#jp-category-filters .category-pill").forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+            currentJpCategory = pill.getAttribute("data-cat") || "ALL";
+            renderJpAutoTrains();
+        });
+    });
+
+    // Instant Route Auto-Discovery in Journey Planner
+    const jpFrom = document.getElementById("jp-from-station");
+    const jpTo = document.getElementById("jp-to-station");
+    let jpDebounceTimer = null;
+    function onJpStationChange() {
+        clearTimeout(jpDebounceTimer);
+        jpDebounceTimer = setTimeout(() => {
+            const from = (jpFrom?.value || "").trim();
+            const to = (jpTo?.value || "").trim();
+            if (from && to && from.length >= 2 && to.length >= 2) {
+                autoDiscoverJourneyTrains(from, to, true);
+            }
+        }, 350);
+    }
+    if (jpFrom) {
+        jpFrom.addEventListener("input", onJpStationChange);
+        jpFrom.addEventListener("change", onJpStationChange);
+    }
+    if (jpTo) {
+        jpTo.addEventListener("input", onJpStationChange);
+        jpTo.addEventListener("change", onJpStationChange);
+    }
+
+    // Auto-Assign Top 3 Trains Button in Journey Planner
+    const btnAutoAssign = document.getElementById("btn-jp-auto-assign-top3");
+    if (btnAutoAssign) {
+        btnAutoAssign.addEventListener("click", () => {
+            assignTop3TrainsToJourneySlots(true);
+        });
+    }
+
+    // Instant Route Auto-Search in Train Search View
+    const searchFrom = document.getElementById("search-input-from");
+    const searchTo = document.getElementById("search-input-to");
+    let searchDebounceTimer = null;
+    function onSearchStationChange() {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            if (searchFrom?.value.trim() && searchTo?.value.trim()) {
+                handleTrainSearch();
+            }
+        }, 350);
+    }
+    if (searchFrom) {
+        searchFrom.addEventListener("input", onSearchStationChange);
+        searchFrom.addEventListener("change", onSearchStationChange);
+    }
+    if (searchTo) {
+        searchTo.addEventListener("input", onSearchStationChange);
+        searchTo.addEventListener("change", onSearchStationChange);
+    }
+
     // Details View
     const btnLoadDetails = document.getElementById("btn-load-details");
     if (btnLoadDetails) {
@@ -259,6 +335,33 @@ async function fetchSystemStatus() {
     }
 }
 
+// ================= TRAIN CATEGORY HELPERS =================
+function getCategoryBadge(trainType) {
+    const t = (trainType || "").toLowerCase();
+    if (t === "rajdhani") {
+        return `<span class="badge-category badge-category-rajdhani">👑 Rajdhani</span>`;
+    } else if (t === "special") {
+        return `<span class="badge-category badge-category-special">⭐ Special</span>`;
+    } else if (t.includes("mail") || t.includes("express") || t.includes("superfast")) {
+        return `<span class="badge-category badge-category-mail">⚡ Mail / Express</span>`;
+    } else if (t.includes("passenger") || t.includes("local") || t.includes("memu")) {
+        return `<span class="badge-category badge-category-passenger">🚉 Passenger</span>`;
+    } else if (t.includes("shatabdi") || t.includes("vande")) {
+        return `<span class="badge-category badge-category-mail">🚄 ${escapeHtml(trainType)}</span>`;
+    }
+    return `<span class="badge-tag badge-tag-blue">${escapeHtml(trainType)}</span>`;
+}
+
+function matchesCategory(trainType, category) {
+    if (!category || category === "ALL") return true;
+    const t = (trainType || "").toLowerCase();
+    if (category === "Rajdhani") return t === "rajdhani";
+    if (category === "Special") return t === "special";
+    if (category === "Mail/Express") return t.includes("mail") || t.includes("express") || t.includes("superfast");
+    if (category === "Passenger") return t.includes("passenger") || t.includes("local") || t.includes("memu");
+    return true;
+}
+
 // ================= TRAIN INFORMATION & SEARCH =================
 async function handleTrainSearch() {
     const query = document.getElementById("search-input-query").value.trim();
@@ -274,73 +377,222 @@ async function handleTrainSearch() {
 
     showToast("🔍 Searching train database...");
     const container = document.getElementById("search-results-container");
-    const countEl = document.getElementById("search-count");
 
     try {
         const res = await fetch(`/api/trains/search?${params.toString()}`);
         if (!res.ok) throw new Error("Search failed");
         const trains = await res.json();
+        lastSearchResults = trains;
 
-        countEl.textContent = trains.length;
-        if (trains.length === 0) {
-            container.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 24px;">No matching trains found. Try searching for Rajdhani, Shatabdi, or major station codes (NDLS, BCT, HWH, JP).</div>`;
-            return;
+        // Update counts on filter pills
+        const elAll = document.getElementById("search-cat-count-all");
+        const elRaj = document.getElementById("search-cat-count-raj");
+        const elSpec = document.getElementById("search-cat-count-spec");
+        const elMail = document.getElementById("search-cat-count-mail");
+        const elPass = document.getElementById("search-cat-count-pass");
+
+        if (elAll) elAll.textContent = trains.length;
+        if (elRaj) elRaj.textContent = trains.filter(t => matchesCategory(t.train_type, "Rajdhani")).length;
+        if (elSpec) elSpec.textContent = trains.filter(t => matchesCategory(t.train_type, "Special")).length;
+        if (elMail) elMail.textContent = trains.filter(t => matchesCategory(t.train_type, "Mail/Express")).length;
+        if (elPass) elPass.textContent = trains.filter(t => matchesCategory(t.train_type, "Passenger")).length;
+
+        renderSearchResults();
+        showToast(`✅ Found ${trains.length} trains!`);
+    } catch (err) {
+        container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Error searching trains. Please check your inputs.</div>`;
+    }
+}
+
+function renderSearchResults() {
+    const container = document.getElementById("search-results-container");
+    const countEl = document.getElementById("search-count");
+    if (!container) return;
+
+    const filtered = lastSearchResults.filter(t => matchesCategory(t.train_type, currentSearchCategory));
+    if (countEl) countEl.textContent = filtered.length;
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 24px;">No matching trains found in category '${currentSearchCategory}'.</div>`;
+        return;
+    }
+
+    container.innerHTML = filtered.map(t => `
+        <div class="train-result-card" id="train-card-${t.train_number}">
+            <div class="train-card-top">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span class="train-tag" style="font-size: 1rem;">${t.train_number}</span>
+                    <strong style="font-size: 1.05rem; color: #fff;">${escapeHtml(t.train_name)}</strong>
+                    ${getCategoryBadge(t.train_type)}
+                </div>
+                <div class="train-badge-group">
+                    <span class="badge-tag badge-tag-blue">${t.classes.join(", ")}</span>
+                    <span class="badge-tag badge-tag-green">${t.running_days.join(" ")}</span>
+                </div>
+            </div>
+
+            <div class="train-route-visual">
+                <div class="route-stop-point">
+                    <div class="route-stop-time">${t.departure_time}</div>
+                    <div class="route-stop-station">${t.source_name} (${t.source_code})</div>
+                </div>
+                <div class="route-duration-line">
+                    <span class="route-duration-text">${t.duration}</span>
+                </div>
+                <div class="route-stop-point">
+                    <div class="route-stop-time">${t.arrival_time}</div>
+                    <div class="route-stop-station">${t.dest_name} (${t.dest_code})</div>
+                </div>
+            </div>
+
+            <div class="train-card-actions">
+                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')">
+                    📌 Set as Primary
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')">
+                    🔄 Set as Alt 1
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')">
+                    🔄 Set as Alt 2
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="viewTrainDetailsTab('${t.train_number}')">
+                    🚆 Details
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="viewRunningStatusTab('${t.train_number}')">
+                    📍 Live Status
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')">
+                    🗺️ Route
+                </button>
+            </div>
+        </div>
+    `).join("");
+}
+
+// ================= JOURNEY PLANNER AUTO-DISCOVERY =================
+async function autoDiscoverJourneyTrains(fromStation, toStation, autoPopulateIfEmpty = false) {
+    const listContainer = document.getElementById("jp-auto-trains-list");
+    if (!listContainer) return;
+    listContainer.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px;">⚡ Automatically discovering Special, Rajdhani, Mail/Express, and Passenger trains on this route...</div>`;
+
+    const params = new URLSearchParams();
+    params.append("from_station", fromStation);
+    params.append("to_station", toStation);
+
+    try {
+        const res = await fetch(`/api/trains/search?${params.toString()}`);
+        if (!res.ok) throw new Error("Search failed");
+        const trains = await res.json();
+        jpAutoDiscoveredTrains = trains;
+
+        // Update counts
+        const elAll = document.getElementById("jp-cat-count-all");
+        const elRaj = document.getElementById("jp-cat-count-raj");
+        const elSpec = document.getElementById("jp-cat-count-spec");
+        const elMail = document.getElementById("jp-cat-count-mail");
+        const elPass = document.getElementById("jp-cat-count-pass");
+
+        if (elAll) elAll.textContent = trains.length;
+        if (elRaj) elRaj.textContent = trains.filter(t => matchesCategory(t.train_type, "Rajdhani")).length;
+        if (elSpec) elSpec.textContent = trains.filter(t => matchesCategory(t.train_type, "Special")).length;
+        if (elMail) elMail.textContent = trains.filter(t => matchesCategory(t.train_type, "Mail/Express")).length;
+        if (elPass) elPass.textContent = trains.filter(t => matchesCategory(t.train_type, "Passenger")).length;
+
+        renderJpAutoTrains();
+
+        // If primary train input is currently empty, auto-assign top 3 trains!
+        const primaryInput = document.getElementById("jp-primary-train");
+        if (autoPopulateIfEmpty && primaryInput && !primaryInput.value && trains.length > 0) {
+            assignTop3TrainsToJourneySlots(false);
         }
+    } catch (err) {
+        listContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 14px;">Could not discover trains for route. Please verify station names.</div>`;
+    }
+}
 
-        container.innerHTML = trains.map(t => `
-            <div class="train-result-card" id="train-card-${t.train_number}">
-                <div class="train-card-top">
-                    <div>
-                        <span class="train-tag" style="font-size: 1rem;">${t.train_number}</span>
-                        <strong style="font-size: 1.05rem; margin-left: 6px; color: #fff;">${escapeHtml(t.train_name)}</strong>
-                        <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">(${t.train_type})</span>
+function renderJpAutoTrains() {
+    const listContainer = document.getElementById("jp-auto-trains-list");
+    if (!listContainer) return;
+
+    const primaryVal = (document.getElementById("jp-primary-train")?.value || "").trim();
+    const alt1Val = (document.getElementById("jp-alt1-train")?.value || "").trim();
+    const alt2Val = (document.getElementById("jp-alt2-train")?.value || "").trim();
+
+    const filtered = jpAutoDiscoveredTrains.filter(t => matchesCategory(t.train_type, currentJpCategory));
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px;">No trains found for category '${currentJpCategory}'.</div>`;
+        return;
+    }
+
+    listContainer.innerHTML = filtered.map(t => {
+        let assignedSlot = null;
+        if (primaryVal.includes(t.train_number)) assignedSlot = "PRIMARY";
+        else if (alt1Val.includes(t.train_number)) assignedSlot = "ALT 1";
+        else if (alt2Val.includes(t.train_number)) assignedSlot = "ALT 2";
+
+        return `
+            <div class="auto-train-card ${assignedSlot ? 'is-assigned' : ''}" id="auto-train-${t.train_number}">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <strong style="color: #fff; font-size: 0.95rem;">${t.train_number} - ${escapeHtml(t.train_name)}</strong>
+                        ${getCategoryBadge(t.train_type)}
+                        ${assignedSlot ? `<span class="badge-tag badge-tag-green" style="font-weight: 700;">✓ ASSIGNED AS ${assignedSlot}</span>` : ''}
                     </div>
-                    <div class="train-badge-group">
-                        <span class="badge-tag badge-tag-blue">${t.classes.join(", ")}</span>
-                        <span class="badge-tag badge-tag-green">${t.running_days.join(" ")}</span>
+                    <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <span>Dep: <strong>${t.departure_time}</strong> (${t.source_code})</span>
+                        <span>➔</span>
+                        <span>Arr: <strong>${t.arrival_time}</strong> (${t.dest_code})</span>
+                        <span>⏱️ ${t.duration}</span>
+                        <span>Classes: <strong>${t.classes.join(", ")}</strong></span>
                     </div>
                 </div>
 
-                <div class="train-route-visual">
-                    <div class="route-stop-point">
-                        <div class="route-stop-time">${t.departure_time}</div>
-                        <div class="route-stop-station">${t.source_name} (${t.source_code})</div>
-                    </div>
-                    <div class="route-duration-line">
-                        <span class="route-duration-text">${t.duration}</span>
-                    </div>
-                    <div class="route-stop-point">
-                        <div class="route-stop-time">${t.arrival_time}</div>
-                        <div class="route-stop-station">${t.dest_name} (${t.dest_code})</div>
-                    </div>
-                </div>
-
-                <div class="train-card-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')">
-                        📌 Set as Primary
+                <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')" title="Set as Primary Train">
+                        📌 Primary
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')">
-                        🔄 Set as Alt 1
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')" title="Set as Alternative 1">
+                        🔁 Alt 1
                     </button>
-                    <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')">
-                        🔄 Set as Alt 2
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')" title="Set as Alternative 2">
+                        🔀 Alt 2
                     </button>
-                    <button class="btn btn-primary btn-sm" onclick="viewTrainDetailsTab('${t.train_number}')">
-                        🚆 Details
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="viewRunningStatusTab('${t.train_number}')">
-                        📍 Live Status
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')" title="View Route Timeline">
                         🗺️ Route
                     </button>
                 </div>
             </div>
-        `).join("");
+        `;
+    }).join("");
+}
 
-        showToast(`✅ Found ${trains.length} trains!`);
-    } catch (err) {
-        container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Error searching trains. Please check your inputs.</div>`;
+function assignTop3TrainsToJourneySlots(showToastMsg = true) {
+    if (!jpAutoDiscoveredTrains || jpAutoDiscoveredTrains.length === 0) {
+        if (showToastMsg) showToast("⚠️ Please enter route details (From & To station) first.");
+        return;
+    }
+
+    const rajdhani = jpAutoDiscoveredTrains.find(t => t.train_type === "Rajdhani");
+    const special = jpAutoDiscoveredTrains.find(t => t.train_type === "Special");
+    const mailExp = jpAutoDiscoveredTrains.find(t => t.train_type === "Mail/Express" || t.train_type === "Superfast");
+    const pass = jpAutoDiscoveredTrains.find(t => t.train_type === "Passenger" || t.train_type === "Local");
+
+    const primary = rajdhani || jpAutoDiscoveredTrains[0];
+    const alt1 = special || jpAutoDiscoveredTrains.find(t => t.train_number !== primary.train_number);
+    const alt2 = mailExp || pass || jpAutoDiscoveredTrains.find(t => t.train_number !== primary.train_number && (!alt1 || t.train_number !== alt1.train_number));
+
+    const primaryInput = document.getElementById("jp-primary-train");
+    const alt1Input = document.getElementById("jp-alt1-train");
+    const alt2Input = document.getElementById("jp-alt2-train");
+
+    if (primary && primaryInput) primaryInput.value = `${primary.train_number} - ${primary.train_name}`;
+    if (alt1 && alt1Input) alt1Input.value = `${alt1.train_number} - ${alt1.train_name}`;
+    if (alt2 && alt2Input) alt2Input.value = `${alt2.train_number} - ${alt2.train_name}`;
+
+    renderJpAutoTrains();
+    if (showToastMsg) {
+        showToast("✨ Auto-assigned optimal Primary, Alt 1, and Alt 2 trains!");
     }
 }
 
@@ -366,6 +618,8 @@ window.quickAssignTrain = function(number, name, src, dst, slot) {
         if (alt2Input) alt2Input.value = fullTrainStr;
         showToast(`🔄 Set ${number} as Alternative Train 2!`);
     }
+
+    renderJpAutoTrains();
 };
 
 // Open Train Details Tab & Load
@@ -665,6 +919,11 @@ function applyJourneyState(data) {
         if (jpPrimary) jpPrimary.value = activeJourney.primary_train || activeJourney.preferred_train;
         if (jpAlt1) jpAlt1.value = activeJourney.alt_train_1 || "";
         if (jpAlt2) jpAlt2.value = activeJourney.alt_train_2 || "";
+
+        // Auto-discover route trains for Journey Planner if route is set
+        if (activeJourney.from_station && activeJourney.to_station) {
+            autoDiscoverJourneyTrains(activeJourney.from_station, activeJourney.to_station, false);
+        }
 
         // Update Dashboard Slots Preview
         const dashPrimary = document.getElementById("dash-primary-train-name");

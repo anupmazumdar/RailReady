@@ -24,13 +24,15 @@ class TrainService:
         query: Optional[str] = None,
         from_station: Optional[str] = None,
         to_station: Optional[str] = None,
-        journey_date: Optional[str] = None
+        journey_date: Optional[str] = None,
+        train_type: Optional[str] = None
     ) -> List[TrainSummary]:
         clean_q = sanitize_input_text(query) if query else None
         clean_src = sanitize_input_text(from_station) if from_station else None
         clean_dst = sanitize_input_text(to_station) if to_station else None
+        clean_type = sanitize_input_text(train_type) if train_type else None
 
-        cache_key = f"search:{clean_q}:{clean_src}:{clean_dst}:{journey_date}"
+        cache_key = f"search:{clean_q}:{clean_src}:{clean_dst}:{journey_date}:{clean_type}"
         cached, _ = cache_service.get(cache_key)
         if cached:
             return cached
@@ -39,7 +41,8 @@ class TrainService:
             query=clean_q,
             from_station=clean_src,
             to_station=clean_dst,
-            journey_date=journey_date
+            journey_date=journey_date,
+            train_type=clean_type
         )
         cache_service.set(cache_key, results, CACHE_TTL_ROUTE_SECONDS)
         return results

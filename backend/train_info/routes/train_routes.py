@@ -16,14 +16,16 @@ def search_trains_endpoint(
     query: Optional[str] = Query(None, description="Search by train number or name"),
     from_station: Optional[str] = Query(None, description="Origin / Boarding station code"),
     to_station: Optional[str] = Query(None, description="Destination station code"),
-    journey_date: Optional[str] = Query(None, description="Journey date (YYYY-MM-DD)")
+    journey_date: Optional[str] = Query(None, description="Journey date (YYYY-MM-DD)"),
+    train_type: Optional[str] = Query(None, description="Filter by category (Rajdhani, Special, Mail/Express, Passenger)")
 ):
-    """Search trains by number, name, or station pair."""
+    """Search trains by number, name, station pair, or category."""
     results = train_service.search_trains(
         query=query,
         from_station=from_station,
         to_station=to_station,
-        journey_date=journey_date
+        journey_date=journey_date,
+        train_type=train_type
     )
     return results
 

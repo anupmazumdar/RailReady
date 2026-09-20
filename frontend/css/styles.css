@@ -750,66 +750,138 @@ select:focus {
     margin: 4px 0;
 }
 
-/* Navigation Bar */
-.navbar {
+/* ================= CATEGORY FILTER PILLS & BADGES ================= */
+.category-filter-bar {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(18, 26, 43, 0.85);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    padding: 6px 10px;
-    margin-bottom: 24px;
-    backdrop-filter: blur(12px);
-    overflow-x: auto;
-    white-space: nowrap;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    margin: 12px 0 16px 0;
 }
 
-.navbar::-webkit-scrollbar {
-    display: none;
-}
-
-.nav-tab {
-    background: transparent;
+.category-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-muted);
-    border: none;
-    padding: 8px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 0.88rem;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
+    transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    user-select: none;
+}
+
+.category-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    transform: translateY(-1px);
+}
+
+.category-pill.active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+    color: #fff;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+    font-weight: 600;
+}
+
+.category-pill.pill-rajdhani.active {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+    color: #fef08a;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.category-pill.pill-special.active {
+    background: rgba(236, 72, 153, 0.2);
+    border-color: #ec4899;
+    color: #fbcfe8;
+    box-shadow: 0 0 12px rgba(236, 72, 153, 0.3);
+}
+
+.category-pill.pill-mail.active {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+    color: #bfdbfe;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+}
+
+.category-pill.pill-passenger.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #a7f3d0;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Category Badges on Cards */
+.badge-category {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+.badge-category-rajdhani {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.badge-category-special {
+    background: rgba(236, 72, 153, 0.2);
+    color: #f472b6;
+    border: 1px solid rgba(236, 72, 153, 0.4);
+}
+
+.badge-category-mail {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.badge-category-passenger {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+/* Auto-Discovered Route Trains Grid in Journey Planner */
+.auto-trains-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.auto-train-card {
+    background: rgba(18, 26, 43, 0.9);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     transition: all 0.2s ease;
 }
 
-.nav-tab:hover {
-    color: var(--text-main);
-    background: rgba(255, 255, 255, 0.05);
+.auto-train-card:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    background: rgba(26, 38, 63, 0.9);
 }
 
-.nav-tab.active {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.25));
-    color: #93c5fd;
-    border: 1px solid var(--border-glow);
-    box-shadow: 0 0 12px var(--primary-glow);
-}
-
-/* View Panels */
-.view-panel {
-    display: none;
-    animation: fadeIn 0.25s ease;
-}
-
-.view-panel.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+.auto-train-card.is-assigned {
+    border-color: rgba(16, 185, 129, 0.5);
+    background: rgba(16, 185, 129, 0.08);
 }
 
 /* Train Search & Result Cards */

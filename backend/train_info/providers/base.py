@@ -20,7 +20,8 @@ class TrainDataProvider(ABC):
         query: Optional[str] = None,
         from_station: Optional[str] = None,
         to_station: Optional[str] = None,
-        journey_date: Optional[str] = None
+        journey_date: Optional[str] = None,
+        train_type: Optional[str] = None
     ) -> List[TrainSummary]:
         """Search trains by number, name, or source-destination pair."""
         pass

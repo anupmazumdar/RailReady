@@ -173,12 +173,23 @@
                     </div>
                 </div>
 
-                <!-- Search Results -->
-                <div id="search-results-heading" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <!-- Search Results & Category Filter Pills -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                     <h3 style="font-size: 1.05rem; color: #fff;">Available Trains (<span id="search-count">0</span>)</h3>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Entering route details automatically finds all matching categories</span>
                 </div>
+
+                <!-- Category Filter Pills -->
+                <div class="category-filter-bar" id="search-category-filters">
+                    <button type="button" class="category-pill active" data-cat="ALL" id="search-pill-all">All Trains (<span id="search-cat-count-all">0</span>)</button>
+                    <button type="button" class="category-pill pill-rajdhani" data-cat="Rajdhani" id="search-pill-raj">👑 Rajdhani (<span id="search-cat-count-raj">0</span>)</button>
+                    <button type="button" class="category-pill pill-special" data-cat="Special" id="search-pill-spec">⭐ Special Trains (<span id="search-cat-count-spec">0</span>)</button>
+                    <button type="button" class="category-pill pill-mail" data-cat="Mail/Express" id="search-pill-mail">⚡ Mail / Express (<span id="search-cat-count-mail">0</span>)</button>
+                    <button type="button" class="category-pill pill-passenger" data-cat="Passenger" id="search-pill-pass">🚉 Passenger / Local (<span id="search-cat-count-pass">0</span>)</button>
+                </div>
+
                 <div id="search-results-container">
-                    <div style="text-align: center; color: var(--text-dim); padding: 24px;">Enter a train number, name, or station pair to search available schedules.</div>
+                    <div style="text-align: center; color: var(--text-dim); padding: 24px;">Enter a route (From & To station) to automatically discover Rajdhani, Special, Mail/Express, and Passenger trains.</div>
                 </div>
             </section>
         </div>
@@ -264,9 +275,43 @@
                         </div>
                     </div>
 
+                    <!-- Auto-Discovered Route Trains Section (Zero Manual Train Entry Needed) -->
+                    <div id="jp-auto-discovery-section" style="margin: 16px 0; background: rgba(11, 15, 25, 0.5); padding: 18px; border-radius: var(--radius-md); border: 1px solid rgba(59, 130, 246, 0.35);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <h3 style="font-size: 1rem; color: #60a5fa; display: flex; align-items: center; gap: 8px;">
+                                    <span>⚡</span> Automatically Discovered Trains on this Route
+                                </h3>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">
+                                    Entering route details automatically finds Special, Rajdhani, Mail, Express, and Passenger trains!
+                                </span>
+                            </div>
+                            <button type="button" id="btn-jp-auto-assign-top3" class="btn btn-accent btn-sm">
+                                ✨ Auto-Assign Top 3 Trains
+                            </button>
+                        </div>
+
+                        <!-- Category Filter Pills -->
+                        <div class="category-filter-bar" id="jp-category-filters">
+                            <button type="button" class="category-pill active" data-cat="ALL" id="jp-pill-all">All (<span id="jp-cat-count-all">0</span>)</button>
+                            <button type="button" class="category-pill pill-rajdhani" data-cat="Rajdhani" id="jp-pill-raj">👑 Rajdhani (<span id="jp-cat-count-raj">0</span>)</button>
+                            <button type="button" class="category-pill pill-special" data-cat="Special" id="jp-pill-spec">⭐ Special (<span id="jp-cat-count-spec">0</span>)</button>
+                            <button type="button" class="category-pill pill-mail" data-cat="Mail/Express" id="jp-pill-mail">⚡ Mail / Express (<span id="jp-cat-count-mail">0</span>)</button>
+                            <button type="button" class="category-pill pill-passenger" data-cat="Passenger" id="jp-pill-pass">🚉 Passenger / Local (<span id="jp-cat-count-pass">0</span>)</button>
+                        </div>
+
+                        <div id="jp-auto-trains-list" class="auto-trains-grid">
+                            <div style="text-align: center; color: var(--text-dim); padding: 18px;">
+                                Enter From Station & To Station above to automatically load all trains on this route.
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Train Slots: Primary, Alt 1, Alt 2 -->
                     <div style="background: rgba(11, 15, 25, 0.5); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin: 16px 0;">
-                        <h3 style="font-size: 0.95rem; color: #93c5fd; margin-bottom: 12px;">Train Slot Assignments (Pick from Train Search or enter below)</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="font-size: 0.95rem; color: #93c5fd;">Train Slot Assignments (Auto-populated from route or manual edit)</h3>
+                        </div>
                         <div class="form-group">
                             <label for="jp-primary-train">Primary Train Selection</label>
                             <input type="text" id="jp-primary-train" placeholder="e.g. 12952 - TEJAS RAJ EXP" required>
