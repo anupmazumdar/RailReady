@@ -67,6 +67,9 @@ class JourneyBase(BaseModel):
     preferred_train: str = Field(..., min_length=1, max_length=100, description="Train Name or Number")
     preferred_class: str = Field(..., min_length=1, max_length=10, description="Class (e.g. 3A, 2A, SL)")
     tatkal_type: TatkalType = Field(default=TatkalType.AC)
+    primary_train: Optional[str] = Field(default=None, description="Primary Train Selection")
+    alt_train_1: Optional[str] = Field(default=None, description="Alternative Train 1")
+    alt_train_2: Optional[str] = Field(default=None, description="Alternative Train 2")
 
 
 class JourneyCreate(JourneyBase):

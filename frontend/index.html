@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tatkal Booking Preparation Assistant</title>
-    <meta name="description" content="Local offline organizer for preparing journey details, passenger data, and countdown reminders before manually booking Tatkal tickets on the official IRCTC portal.">
+    <title>RailReady - Railway Journey, Train Information & Tatkal Assistant</title>
+    <meta name="description" content="Local offline railway assistant for train search, live running status, route timelines, journey planning, and Tatkal preparation. Independent of IRCTC.">
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
         <aside class="compliance-banner" id="compliance-banner" aria-label="Compliance Notice">
             <span class="compliance-icon" aria-hidden="true">🛡️</span>
             <p class="compliance-text">
-                <strong>Local Preparation Assistant Only:</strong> This application prepares information and provides reminders only. It operates 100% offline and <strong>does NOT</strong> connect to, control, scrape, or automate the IRCTC website. All bookings must be completed manually by you on the official IRCTC portal.
+                <strong>Local Preparation & Information Platform:</strong> RailReady operates 100% offline using decoupled data providers. It <strong>does NOT</strong> connect to, scrape, or automate the IRCTC website or third-party tracking portals. All bookings must be completed manually by you on the official IRCTC portal.
             </p>
         </aside>
 
@@ -24,10 +24,10 @@
         <header class="app-header">
             <div>
                 <h1 class="brand-title" id="app-title">
-                    <span>🚆</span> Tatkal Preparation Assistant
+                    <span>🚆</span> RailReady
                 </h1>
                 <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">
-                    Personal offline organizer & reminder assistant
+                    Train Information, Live Running Status, Route Timeline & Tatkal Booking Preparation Assistant
                 </p>
             </div>
             <div style="display: flex; gap: 12px; align-items: center;">
@@ -41,309 +41,449 @@
             </div>
         </header>
 
-        <!-- Main Grid Content -->
-        <main class="dashboard-grid">
-            <!-- Left Column: Journey Planner & Countdown -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-                
-                <!-- Live Countdown Showcase -->
-                <section class="glass-card" id="section-countdown" aria-labelledby="countdown-heading">
-                    <div class="card-header">
-                        <h2 class="card-title" id="countdown-heading">
-                            <span>⏱️</span> Tatkal Opening Countdown
-                        </h2>
-                        <span id="countdown-status-badge" class="countdown-status-badge">NO JOURNEY ACTIVE</span>
-                    </div>
+        <!-- Top-Level Multi-Tab Navigation Bar -->
+        <nav class="navbar" id="main-nav" aria-label="Main Navigation">
+            <button class="nav-tab active" data-view="dashboard" id="tab-dashboard">🏠 Dashboard</button>
+            <button class="nav-tab" data-view="train-search" id="tab-train-search">🔍 Train Search</button>
+            <button class="nav-tab" data-view="train-details" id="tab-train-details">🚆 Train Details</button>
+            <button class="nav-tab" data-view="running-status" id="tab-running-status">📍 Running Status</button>
+            <button class="nav-tab" data-view="route-timeline" id="tab-route-timeline">🗺️ Route</button>
+            <button class="nav-tab" data-view="journey-planner" id="tab-journey-planner">🧭 Journey Planner</button>
+            <button class="nav-tab" data-view="tatkal-prep" id="tab-tatkal-prep">⚡ Tatkal Preparation</button>
+            <button class="nav-tab" data-view="passengers" id="tab-passengers">👥 Passenger Details</button>
+            <button class="nav-tab" data-view="notifications" id="tab-notifications">🔔 Notifications</button>
+            <button class="nav-tab" data-view="settings" id="tab-settings">⚙️ Settings</button>
+        </nav>
 
-                    <div class="countdown-box" id="countdown-box">
-                        <div class="countdown-digits-wrapper">
-                            <div class="digit-block">
-                                <div class="digit-value" id="timer-days">00</div>
-                                <div class="digit-label">Days</div>
+        <!-- ================= VIEW 1: DASHBOARD ================= -->
+        <div class="view-panel active" id="view-dashboard">
+            <div class="dashboard-grid">
+                <!-- Left: Quick Countdown & Active Journey Summary -->
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <section class="glass-card" aria-labelledby="dash-countdown-heading">
+                        <div class="card-header">
+                            <h2 class="card-title" id="dash-countdown-heading"><span>⏱️</span> Tatkal Opening Countdown</h2>
+                            <span id="dash-status-badge" class="countdown-status-badge">NO JOURNEY ACTIVE</span>
+                        </div>
+                        <div class="countdown-box">
+                            <div class="countdown-digits-wrapper">
+                                <div class="digit-block"><div class="digit-value" id="dash-timer-days">00</div><div class="digit-label">Days</div></div>
+                                <div class="digit-block"><div class="digit-value" id="dash-timer-hours">00</div><div class="digit-label">Hours</div></div>
+                                <div class="digit-block"><div class="digit-value" id="dash-timer-minutes">00</div><div class="digit-label">Mins</div></div>
+                                <div class="digit-block"><div class="digit-value" id="dash-timer-seconds">00</div><div class="digit-label">Secs</div></div>
                             </div>
-                            <div class="digit-block">
-                                <div class="digit-value" id="timer-hours">00</div>
-                                <div class="digit-label">Hours</div>
+                            <p id="dash-countdown-message" class="countdown-notice">Configure journey in Journey Planner.</p>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(11, 15, 25, 0.6); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                            <div>
+                                <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Expected Opening (IST)</div>
+                                <div id="dash-opening-time" style="font-weight: 600; color: #93c5fd; font-family: var(--font-mono);">--</div>
                             </div>
-                            <div class="digit-block">
-                                <div class="digit-value" id="timer-minutes">00</div>
-                                <div class="digit-label">Mins</div>
+                            <button class="btn btn-primary btn-sm" onclick="switchView('tatkal-prep')">Open Tatkal Prep ➔</button>
+                        </div>
+                    </section>
+
+                    <!-- Active Journey Slots Preview -->
+                    <section class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><span>🧭</span> Planned Journey Trains</h3>
+                            <button class="btn btn-secondary btn-sm" onclick="switchView('journey-planner')">Edit Planner</button>
+                        </div>
+                        <div id="dash-journey-slots-preview" style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="background: rgba(11, 15, 25, 0.4); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                                <span style="font-size: 0.75rem; color: #60a5fa; font-weight: 700;">PRIMARY TRAIN</span>
+                                <div id="dash-primary-train-name" style="font-weight: 600; margin-top: 2px;">Not Selected</div>
                             </div>
-                            <div class="digit-block">
-                                <div class="digit-value" id="timer-seconds">00</div>
-                                <div class="digit-label">Secs</div>
+                            <div style="background: rgba(11, 15, 25, 0.4); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                                <span style="font-size: 0.75rem; color: #34d399; font-weight: 700;">ALTERNATIVE TRAIN 1</span>
+                                <div id="dash-alt1-train-name" style="font-weight: 600; margin-top: 2px;">None</div>
+                            </div>
+                            <div style="background: rgba(11, 15, 25, 0.4); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                                <span style="font-size: 0.75rem; color: #f59e0b; font-weight: 700;">ALTERNATIVE TRAIN 2</span>
+                                <div id="dash-alt2-train-name" style="font-weight: 600; margin-top: 2px;">None</div>
                             </div>
                         </div>
-                        <p id="countdown-message" class="countdown-notice">
-                            Enter journey details below to calculate expected opening time.
-                        </p>
+                    </section>
+                </div>
+
+                <!-- Right: Prepared Passengers & Readiness Summary -->
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <section class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><span>👥</span> Prepared Passengers (<span id="dash-passenger-count">0</span>/4)</h3>
+                            <button class="btn btn-accent btn-sm" id="btn-dash-copy-passengers">📋 Copy All</button>
+                        </div>
+                        <div id="dash-passenger-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 12px;">No passengers prepared. Add in Passenger Details tab.</div>
+                        </div>
+                    </section>
+
+                    <section class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><span>✅</span> Booking Readiness</h3>
+                            <button class="btn btn-secondary btn-sm" onclick="switchView('tatkal-prep')">Full Checklist</button>
+                        </div>
+                        <div class="checklist-progress-bar-bg">
+                            <div id="dash-checklist-fill" class="checklist-progress-bar-fill"></div>
+                        </div>
+                        <p id="dash-checklist-text" style="font-size: 0.85rem; color: var(--text-muted);">0 of 8 Completed</p>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW 2: TRAIN SEARCH ================= -->
+        <div class="view-panel" id="view-train-search">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🔍</span> Train Information & Search</h2>
+                    <span class="badge-tag badge-tag-blue">Offline Provider Active</span>
+                </div>
+                <div style="background: rgba(11, 15, 25, 0.4); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="search-input-query">Train Number or Name</label>
+                            <input type="text" id="search-input-query" placeholder="e.g. 12302 or Rajdhani">
+                        </div>
+                        <div class="form-group">
+                            <label for="search-input-date">Journey Date</label>
+                            <input type="date" id="search-input-date">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="search-input-from">From Station</label>
+                            <input type="text" id="search-input-from" list="station-list" placeholder="e.g. NDLS (New Delhi)">
+                        </div>
+                        <div class="form-group">
+                            <label for="search-input-to">To Station</label>
+                            <input type="text" id="search-input-to" list="station-list" placeholder="e.g. BCT (Mumbai Central)">
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
+                        <button id="btn-execute-search" class="btn btn-primary">Search Trains</button>
+                    </div>
+                </div>
+
+                <!-- Search Results -->
+                <div id="search-results-heading" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 1.05rem; color: #fff;">Available Trains (<span id="search-count">0</span>)</h3>
+                </div>
+                <div id="search-results-container">
+                    <div style="text-align: center; color: var(--text-dim); padding: 24px;">Enter a train number, name, or station pair to search available schedules.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 3: TRAIN DETAILS ================= -->
+        <div class="view-panel" id="view-train-details">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🚆</span> Train Details & Schedule</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="details-train-input" placeholder="Train #" style="width: 120px; padding: 6px 10px;">
+                        <button id="btn-load-details" class="btn btn-secondary btn-sm">Load</button>
+                    </div>
+                </div>
+                <div id="train-details-content">
+                    <div style="text-align: center; color: var(--text-dim); padding: 30px;">Select a train from search results or enter a train number above to view detailed schedules.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 4: RUNNING STATUS ================= -->
+        <div class="view-panel" id="view-running-status">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>📍</span> Live Train Running Status & Delay Tracker</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="status-train-input" placeholder="Train #" style="width: 120px; padding: 6px 10px;">
+                        <button id="btn-load-running-status" class="btn btn-primary btn-sm">Track</button>
+                    </div>
+                </div>
+
+                <div id="running-status-content">
+                    <div style="text-align: center; color: var(--text-dim); padding: 30px;">Enter a 5-digit train number above or click 'Track Status' from train search to view live running metrics.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 5: ROUTE TIMELINE ================= -->
+        <div class="view-panel" id="view-route-timeline">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🗺️</span> Station Route Timeline</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="timeline-train-input" placeholder="Train #" style="width: 120px; padding: 6px 10px;">
+                        <button id="btn-load-timeline" class="btn btn-secondary btn-sm">Show Route</button>
+                    </div>
+                </div>
+                <div id="route-timeline-content">
+                    <div style="text-align: center; color: var(--text-dim); padding: 30px;">Select a train to inspect the station sequence, scheduled halts, and platform allocations.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 6: JOURNEY PLANNER ================= -->
+        <div class="view-panel" id="view-journey-planner">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🧭</span> Journey Planner & Alternate Train Selection</h2>
+                </div>
+
+                <form id="form-journey-main">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="jp-from-station">From Station</label>
+                            <input type="text" id="jp-from-station" list="station-list" placeholder="e.g. NDLS (New Delhi)" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="jp-to-station">To Station</label>
+                            <input type="text" id="jp-to-station" list="station-list" placeholder="e.g. BCT (Mumbai Central)" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="jp-journey-date">Journey Date</label>
+                            <input type="date" id="jp-journey-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="jp-tatkal-type">Tatkal Quota Type</label>
+                            <select id="jp-tatkal-type" required>
+                                <option value="AC">AC Classes (Opens 10:00 AM IST)</option>
+                                <option value="NON_AC">Non-AC Sleeper/2S (Opens 11:00 AM IST)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Train Slots: Primary, Alt 1, Alt 2 -->
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin: 16px 0;">
+                        <h3 style="font-size: 0.95rem; color: #93c5fd; margin-bottom: 12px;">Train Slot Assignments (Pick from Train Search or enter below)</h3>
+                        <div class="form-group">
+                            <label for="jp-primary-train">Primary Train Selection</label>
+                            <input type="text" id="jp-primary-train" placeholder="e.g. 12952 - TEJAS RAJ EXP" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="jp-alt1-train">Alternative Train 1</label>
+                                <input type="text" id="jp-alt1-train" placeholder="e.g. 12954 - AUGUST KRANTI RAJ">
+                            </div>
+                            <div class="form-group">
+                                <label for="jp-alt2-train">Alternative Train 2</label>
+                                <input type="text" id="jp-alt2-train" placeholder="e.g. 12956 - JP BCT SF EXP">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="jp-class">Class</label>
+                            <select id="jp-class" required>
+                                <option value="3A">3A - AC 3 Tier</option>
+                                <option value="2A">2A - AC 2 Tier</option>
+                                <option value="3E">3E - AC 3 Economy</option>
+                                <option value="1A">1A - AC First Class</option>
+                                <option value="CC">CC - AC Chair Car</option>
+                                <option value="EC">EC - Exec. Chair Car</option>
+                                <option value="SL">SL - Sleeper</option>
+                                <option value="2S">2S - Second Sitting</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-save-journey-main" class="btn btn-primary btn-block">
+                        💾 Save Journey Plan & Compute Opening Time
+                    </button>
+                </form>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 7: TATKAL PREPARATION ================= -->
+        <div class="view-panel" id="view-tatkal-prep">
+            <div class="dashboard-grid">
+                <!-- Live Countdown Section -->
+                <section class="glass-card">
+                    <div class="card-header">
+                        <h2 class="card-title"><span>⚡</span> Tatkal Countdown & Opening Window</h2>
+                        <span id="tatkal-status-badge" class="countdown-status-badge">NO JOURNEY ACTIVE</span>
+                    </div>
+
+                    <div class="countdown-box">
+                        <div class="countdown-digits-wrapper">
+                            <div class="digit-block"><div class="digit-value" id="tatkal-timer-days">00</div><div class="digit-label">Days</div></div>
+                            <div class="digit-block"><div class="digit-value" id="tatkal-timer-hours">00</div><div class="digit-label">Hours</div></div>
+                            <div class="digit-block"><div class="digit-value" id="tatkal-timer-minutes">00</div><div class="digit-label">Mins</div></div>
+                            <div class="digit-block"><div class="digit-value" id="tatkal-timer-seconds">00</div><div class="digit-label">Secs</div></div>
+                        </div>
+                        <p id="tatkal-countdown-message" class="countdown-notice">Configure journey details to calculate opening time.</p>
                     </div>
 
                     <div style="background: rgba(11, 15, 25, 0.6); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Expected Opening (IST)</div>
-                            <div id="display-opening-time" style="font-weight: 600; color: #93c5fd; font-family: var(--font-mono); font-size: 0.95rem;">--</div>
+                            <div id="tatkal-opening-time" style="font-weight: 600; color: #93c5fd; font-family: var(--font-mono); font-size: 0.95rem;">--</div>
                         </div>
-                        <button id="btn-test-notification" class="btn btn-secondary btn-sm" title="Verify notification chime">
-                            🔔 Test Alert
-                        </button>
+                        <button id="btn-tatkal-manual-modal" class="btn btn-secondary btn-sm">Manual IRCTC Link</button>
                     </div>
                     <p style="font-size: 0.78rem; color: var(--warning); margin-top: 8px; font-style: italic;">
                         * Expected opening time — verify current IRCTC rules before booking.
                     </p>
                 </section>
 
-                <!-- Journey Planner Card -->
-                <section class="glass-card" id="section-journey" aria-labelledby="journey-heading">
-                    <div class="card-header">
-                        <h2 class="card-title" id="journey-heading">
-                            <span>🗺️</span> Journey Configuration
-                        </h2>
-                    </div>
-
-                    <form id="form-journey">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="input-from-station">From Station</label>
-                                <input type="text" id="input-from-station" list="station-list" placeholder="e.g. NDLS (New Delhi)" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="input-to-station">To Station</label>
-                                <input type="text" id="input-to-station" list="station-list" placeholder="e.g. BCT (Mumbai Central)" required>
-                            </div>
-                        </div>
-                        <datalist id="station-list"></datalist>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="input-journey-date">Journey Date</label>
-                                <input type="date" id="input-journey-date" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="select-tatkal-type">Tatkal Quota Type</label>
-                                <select id="select-tatkal-type" required>
-                                    <option value="AC">AC Classes (Opens 10:00 AM IST)</option>
-                                    <option value="NON_AC">Non-AC Sleeper/2S (Opens 11:00 AM IST)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="input-train">Preferred Train</label>
-                                <input type="text" id="input-train" placeholder="e.g. 12952 - TEJAS RAJ EXP" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="select-class">Class</label>
-                                <select id="select-class" required>
-                                    <option value="3A">3A - AC 3 Tier</option>
-                                    <option value="2A">2A - AC 2 Tier</option>
-                                    <option value="3E">3E - AC 3 Economy</option>
-                                    <option value="1A">1A - AC First Class</option>
-                                    <option value="CC">CC - AC Chair Car</option>
-                                    <option value="EC">EC - Exec. Chair Car</option>
-                                    <option value="SL">SL - Sleeper</option>
-                                    <option value="2S">2S - Second Sitting</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <button type="submit" id="btn-save-journey" class="btn btn-primary btn-block">
-                            💾 Save Journey & Compute Opening Time
-                        </button>
-                    </form>
-                </section>
-            </div>
-
-            <!-- Right Column: Passenger Preparation & Booking Checklist -->
-            <div style="display: flex; flex-direction: column; gap: 24px;">
-                
-                <!-- Passenger Preparation Card -->
-                <section class="glass-card" id="section-passengers" aria-labelledby="passenger-heading">
+                <!-- Full Pre-Booking Checklist -->
+                <section class="glass-card">
                     <div class="card-header">
                         <div>
-                            <h2 class="card-title" id="passenger-heading">
-                                <span>👥</span> Passenger Preparation
-                            </h2>
-                            <span style="font-size: 0.8rem; color: var(--text-muted);">Max 4 passengers for Tatkal</span>
+                            <h2 class="card-title"><span>✅</span> Pre-Booking Readiness Checklist</h2>
+                            <span id="tatkal-checklist-progress-text" style="font-size: 0.8rem; color: var(--text-muted);">0 of 8 Completed</span>
                         </div>
-                        <button id="btn-copy-all-passengers" class="btn btn-accent btn-sm" title="Copy all details to clipboard">
-                            📋 Copy All Details
-                        </button>
+                        <button id="btn-tatkal-reset-checklist" class="btn btn-secondary btn-sm">↺ Reset</button>
                     </div>
-
-                    <!-- Passenger List -->
-                    <div id="passenger-container" class="passenger-list">
-                        <!-- Rendered dynamically -->
-                    </div>
-
-                    <!-- Add Passenger Form -->
-                    <div id="add-passenger-panel" style="background: rgba(11, 15, 25, 0.4); padding: 16px; border-radius: var(--radius-md); border: 1px dashed var(--border-subtle); margin-top: 12px;">
-                        <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: #93c5fd;">+ Add New Passenger</h3>
-                        <form id="form-add-passenger">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="input-passenger-name">Full Name (Max 16 chars)</label>
-                                    <input type="text" id="input-passenger-name" maxlength="16" placeholder="As per Govt ID" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="input-passenger-age">Age (1-125)</label>
-                                    <input type="number" id="input-passenger-age" min="1" max="125" placeholder="e.g. 32" required>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="select-passenger-gender">Gender</label>
-                                    <select id="select-passenger-gender" required>
-                                        <option value="MALE">Male</option>
-                                        <option value="FEMALE">Female</option>
-                                        <option value="TRANSGENDER">Transgender</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="select-passenger-berth">Berth Preference</label>
-                                    <select id="select-passenger-berth">
-                                        <option value="No Preference">No Preference</option>
-                                        <option value="Lower">Lower</option>
-                                        <option value="Middle">Middle</option>
-                                        <option value="Upper">Upper</option>
-                                        <option value="Side Lower">Side Lower</option>
-                                        <option value="Side Upper">Side Upper</option>
-                                        <option value="Window Side">Window Side</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="select-passenger-meal">Meal Preference</label>
-                                    <select id="select-passenger-meal">
-                                        <option value="None">None / Not Applicable</option>
-                                        <option value="Veg">Veg</option>
-                                        <option value="Non-Veg">Non-Veg</option>
-                                        <option value="Jain">Jain</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 6px;">
-                                    <button type="submit" id="btn-add-passenger" class="btn btn-secondary btn-block">
-                                        Add Passenger
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </section>
-
-                <!-- Pre-Booking Checklist Card -->
-                <section class="glass-card" id="section-checklist" aria-labelledby="checklist-heading">
-                    <div class="card-header">
-                        <div>
-                            <h2 class="card-title" id="checklist-heading">
-                                <span>✅</span> Pre-Booking Readiness Checklist
-                            </h2>
-                            <span id="checklist-progress-text" style="font-size: 0.8rem; color: var(--text-muted);">0 of 8 Completed</span>
-                        </div>
-                        <button id="btn-reset-checklist" class="btn btn-secondary btn-sm" title="Reset all checkboxes">
-                            ↺ Reset
-                        </button>
-                    </div>
-
                     <div class="checklist-progress-bar-bg">
-                        <div id="checklist-progress-fill" class="checklist-progress-bar-fill"></div>
+                        <div id="tatkal-checklist-progress-fill" class="checklist-progress-bar-fill"></div>
                     </div>
-
-                    <div id="checklist-container" class="checklist-container">
+                    <div id="tatkal-checklist-container" class="checklist-container">
                         <!-- Loaded dynamically -->
                     </div>
                 </section>
             </div>
-        </main>
+        </div>
 
-        <!-- Section: Alternate Routes, Split Journeys & Official NTES Live Tracking -->
-        <section class="glass-card" id="section-alternate-routes" style="margin-top: 24px;" aria-labelledby="alternate-routes-heading">
-            <div class="card-header">
-                <div>
-                    <h2 class="card-title" id="alternate-routes-heading">
-                        <span>🔀</span> Alternate Route Splitter & Live Status Explorer
-                    </h2>
-                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
-                        Find connecting trains through major transit junctions when direct trains are sold out. Official Indian Railways Connecting PNR compliant.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Query Controls -->
-            <div style="background: rgba(11, 15, 25, 0.4); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="route-from-station">Source Station</label>
-                        <input type="text" id="route-from-station" list="station-list" placeholder="e.g. NDLS">
+        <!-- ================= VIEW 8: PASSENGER DETAILS ================= -->
+        <div class="view-panel" id="view-passengers">
+            <section class="glass-card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title"><span>👥</span> Passenger Preparation & Quick Copy</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Max 4 passengers for Tatkal</span>
                     </div>
-                    <div class="form-group">
-                        <label for="route-to-station">Destination Station</label>
-                        <input type="text" id="route-to-station" list="station-list" placeholder="e.g. HWH">
+                    <button id="btn-view-copy-all-passengers" class="btn btn-accent btn-sm">📋 Copy All Details</button>
+                </div>
+
+                <div id="view-passenger-container" class="passenger-list">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <!-- Add Passenger Form -->
+                <div id="view-add-passenger-panel" style="background: rgba(11, 15, 25, 0.4); padding: 18px; border-radius: var(--radius-md); border: 1px dashed var(--border-subtle); margin-top: 16px;">
+                    <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: #93c5fd;">+ Add New Passenger</h3>
+                    <form id="form-view-add-passenger">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="view-passenger-name">Full Name (Max 16 chars, letters only)</label>
+                                <input type="text" id="view-passenger-name" maxlength="16" placeholder="As per Govt ID" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="view-passenger-age">Age (1-125)</label>
+                                <input type="number" id="view-passenger-age" min="1" max="125" placeholder="e.g. 32" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="view-passenger-gender">Gender</label>
+                                <select id="view-passenger-gender" required>
+                                    <option value="MALE">Male</option>
+                                    <option value="FEMALE">Female</option>
+                                    <option value="TRANSGENDER">Transgender</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="view-passenger-berth">Berth Preference</label>
+                                <select id="view-passenger-berth">
+                                    <option value="No Preference">No Preference</option>
+                                    <option value="Lower">Lower</option>
+                                    <option value="Middle">Middle</option>
+                                    <option value="Upper">Upper</option>
+                                    <option value="Side Lower">Side Lower</option>
+                                    <option value="Side Upper">Side Upper</option>
+                                    <option value="Window Side">Window Side</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="view-passenger-meal">Meal Preference</label>
+                                <select id="view-passenger-meal">
+                                    <option value="None">None / Not Applicable</option>
+                                    <option value="Veg">Veg</option>
+                                    <option value="Non-Veg">Non-Veg</option>
+                                    <option value="Jain">Jain</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 6px;">
+                                <button type="submit" class="btn btn-primary btn-block">Add Passenger</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW 9: NOTIFICATIONS ================= -->
+        <div class="view-panel" id="view-notifications">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🔔</span> Local Reminder & Notification Settings</h2>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">
+                    Configure local alerts that trigger before your Tatkal booking window opens. All notifications run purely locally on your device without launching external apps.
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: #fff;">Milestone Audio Chime</div>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">Synthesizes an audio chime at 15m, 10m, 5m, 1m, and 0m before opening.</div>
+                        </div>
+                        <button id="btn-test-chime-view" class="btn btn-secondary btn-sm">🔔 Test Audio Chime</button>
+                    </div>
+
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: #fff;">Browser Desktop Notification</div>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">Requests browser notification permission to send desktop alerts when app is in background.</div>
+                        </div>
+                        <button id="btn-test-notification-view" class="btn btn-primary btn-sm">Request & Test</button>
                     </div>
                 </div>
-                <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; margin-top: 10px;">
-                    <button id="btn-find-routes" class="btn btn-primary">
-                        🔍 Find Direct & Split Route Alternatives
-                    </button>
-                </div>
-            </div>
+            </section>
+        </div>
 
-            <!-- Route Results Container -->
-            <div id="route-results-container" style="display: none;">
-                <!-- Direct Trains -->
-                <div style="margin-bottom: 20px;">
-                    <h3 style="font-size: 1rem; color: #60a5fa; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                        <span>🚆</span> Scheduled Direct Trains (<span id="direct-trains-count">0</span>)
-                    </h3>
-                    <div id="direct-trains-list" style="display: flex; flex-direction: column; gap: 10px;">
-                        <!-- Rendered dynamically -->
+        <!-- ================= VIEW 10: SETTINGS ================= -->
+        <div class="view-panel" id="view-settings">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>⚙️</span> RailReady Settings & Data Governance</h2>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <h3 style="font-size: 0.95rem; color: #60a5fa; margin-bottom: 8px;">Active Train Data Provider</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #34d399;">MockTrainDataProvider (Offline High-Fidelity)</strong>
+                                <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Zero scraping, 100% offline simulation. To use an authorized commercial feed, configure TRAIN_DATA_PROVIDER in environment.</p>
+                            </div>
+                            <span class="badge-tag badge-tag-green">ACTIVE</span>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <h3 style="font-size: 0.95rem; color: #f59e0b; margin-bottom: 8px;">Statutory & Legal Declarations</h3>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+                            RailReady is independently developed and is not affiliated with IRCTC, Indian Railways, Where Is My Train, Train Running Status, Google, or any third-party reservation portal. Full compliance details in COMPLIANCE.md and docs/DATA_SOURCES.md.
+                        </p>
+                    </div>
+
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; color: #fff;">Local Application Database</div>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">Stored at storage/tatkal_assistant.db. No passwords or OTPs stored.</div>
+                        </div>
+                        <button id="btn-clear-all-passengers" class="btn btn-secondary btn-sm" style="color: #ef4444;">Clear Passenger Data</button>
                     </div>
                 </div>
+            </section>
+        </div>
 
-                <!-- Split Alternatives -->
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <h3 style="font-size: 1rem; color: #34d399; display: flex; align-items: center; gap: 8px;">
-                            <span>🔀</span> Connecting / Split Route Alternatives (<span id="split-routes-count">0</span>)
-                        </h3>
-                        <span class="pnr-shield-badge">🛡️ Connecting PNR 100% Delay Refund Eligible</span>
-                    </div>
-                    <div id="split-routes-list">
-                        <!-- Rendered dynamically -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Official Live Tracking Guide Sub-Card -->
-            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: 18px; margin-top: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="font-size: 1rem; color: #93c5fd; display: flex; align-items: center; gap: 8px;">
-                        <span>🛰️</span> Official Live Train Status & GPS Tracking (NTES)
-                    </h3>
-                    <span style="font-size: 0.75rem; color: var(--text-dim);">CRIS Real-Time Information System</span>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <input type="text" id="live-train-input" placeholder="Enter 5-digit Train Number (e.g. 12302)">
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button id="btn-query-live-status" class="btn btn-secondary btn-block">
-                            Track via Official NTES
-                        </button>
-                    </div>
-                </div>
-
-                <div id="live-status-details" style="display: none; margin-top: 14px; background: rgba(11, 15, 25, 0.6); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
-                    <!-- Dynamically filled -->
-                </div>
-            </div>
-        </section>
-
-
-        <!-- Manual IRCTC Modal -->
+        <!-- Manual IRCTC Access Modal -->
         <div class="modal-overlay" id="modal-irctc-guide" aria-modal="true" role="dialog" aria-labelledby="modal-title">
             <div class="modal-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -379,13 +519,16 @@
             </div>
         </div>
 
+        <!-- Datalist for station autocomplete -->
+        <datalist id="station-list"></datalist>
+
         <!-- Toast Notifications Container -->
         <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
         <!-- Footer -->
         <footer style="margin-top: 40px; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 20px; font-size: 0.82rem; color: var(--text-dim);">
-            <p>Tatkal Booking Preparation Assistant • Offline Personal Organizer • Fully Independent of IRCTC</p>
-            <p style="margin-top: 4px;">Indian Railways Act 1989 Section 143 Compliant • No Automation • No Scraping</p>
+            <p>RailReady • Offline Personal Railway Assistant • Independent of IRCTC & Third-Party Platforms</p>
+            <p style="margin-top: 4px;">Indian Railways Act 1989 Section 143 Compliant • No Scraping • No Browser Automation</p>
         </footer>
     </div>
 

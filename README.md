@@ -1,64 +1,90 @@
-# Tatkal Booking Preparation Assistant
+# RailReady — Railway Journey, Train Information & Tatkal Assistant
 
-A local, offline-first personal assistant for organizing travel details, managing passenger records, tracking Tatkal opening countdowns, and providing reminder notifications before manually booking on the official IRCTC portal.
-
----
-
-## 🛡️ Statutory & Legal Compliance Notice
-
-> **IMPORTANT**: This application operates with an **absolute air gap** from the live IRCTC reservation system.
-> - **NO** connection, scraping, or automation of IRCTC (`irctc.co.in`).
-> - **NO** Playwright, Selenium, Puppeteer, or browser automation libraries.
-> - **NO** CAPTCHA solving or detection.
-> - **NO** credential, OTP, CVV, or PIN storage.
-> - In full compliance with **Section 143 of the Indian Railways Act, 1989** and **Section 43 & 66 of the Information Technology Act, 2000**.
-> - The user is solely responsible for manually opening the official IRCTC portal and completing their own booking.
+RailReady is a comprehensive, offline-first personal railway assistant designed for Indian railway travelers. It provides train search, station-by-station route timelines, live running status simulation, multi-train journey planning (Primary + Alternative trains), passenger management with instant clipboard helpers, and Tatkal quota countdowns with local audio/browser notifications.
 
 ---
 
-## 🚀 Features
+## 🛡️ Third-Party Data Sources & Statutory Disclaimers
 
-1. **Journey Planner**:
-   - Source & Destination station selection with built-in offline autocompletion.
-   - Calculates the exact Tatkal opening window based on journey date and quota type:
-     - **AC Classes (1A, 2A, 3A, 3E, CC, EC)**: Opens at **10:00:00 AM IST** on the day prior to journey date from train origin.
-     - **Non-AC Classes (SL, 2S)**: Opens at **11:00:00 AM IST** on the day prior to journey date from train origin.
-   - Clearly labeled: *"Expected opening time — verify current IRCTC rules before booking."*
+> **"RailReady is independently developed and is not affiliated with IRCTC, Where Is My Train, Train Running Status, Google, or Indian Railways."**
 
-2. **Passenger Preparation**:
-   - Manage up to 4 passengers (official Indian Railways Tatkal quota limit).
-   - Validates name (max 16 characters), age (1-125), gender, berth preference, and meal options.
-   - **One-Click Quick Copy**:
-     - Bulk copy formatted summary for rapid reference.
-     - Individual field copy buttons (Name, Age) for swift manual entry.
+### External Source Classification & Policy:
 
-3. **Live Countdown & Reminders**:
-   - Real-time precision countdown in `Days : Hours : Mins : Secs`.
-   - Visual badges: `UPCOMING`, `OPENING SOON` (within 15 mins), `WINDOW OPEN`.
-   - Audio chime and local browser notifications at key milestones: 15m, 10m, 5m, 1m, and 0m.
-   - Opening notification: *"Tatkal booking window should now be open. Please open/use IRCTC manually."*
+1. **Reference Sources (Strictly NOT Queried or Scraped)**:
+   * **`https://trainrunningstatus.org/`**: Reference example only for functional information concepts (station sequence, halt duration, delay metrics, platform estimates). RailReady does **NOT** scrape, crawl, reverse-engineer, or query this portal.
+   * **`https://whereismytrain.org.in/`**: Reference example only for search workflows and milestone tracking concepts. RailReady does **NOT** scrape, decompile, reverse-engineer, or access its internal application endpoints.
+   * All RailReady interfaces, CSS, and styling are original implementations built upon RailReady's proprietary glassmorphic design system.
 
-4. **Pre-Booking Readiness Checklist**:
-   - Interactive 8-point checklist covering credentials, payment methods, and train verification.
-   - Saved locally to SQLite database and persisted across refreshes.
+2. **Authorized Data Sources**:
+   * **`MockTrainDataProvider` (Default / Active)**: Built-in, high-fidelity offline simulation engine covering major Indian Railway corridors, train routes, timetables, and delay metrics. Operates with zero network dependency, ensuring 100% privacy and legal compliance.
+   * **`AuthorizedTrainProvider` (Pluggable)**: Architecture interface ready for officially licensed, commercial B2B, or authorized public railway data feeds. Configured purely through environment variables without altering UI or business logic.
 
-5. **Manual IRCTC Access Guide**:
-   - Dedicated modal showing the official IRCTC URL (`https://www.irctc.co.in/`) with a "Copy Link" utility.
-   - Explicit instructions on how to manually log in and book safely.
+---
 
-6. **100% Offline & Private**:
-   - All data saved locally on your computer in `storage/tatkal_assistant.db`.
-   - Zero telemetry, zero analytics, zero external network requests.
+## ⚡ Core Compliance Guarantees
+
+* **Absolute IRCTC Air Gap**: RailReady does **NOT** interact with, automate, or scrape `irctc.co.in`.
+* **Zero Autonomous Actions**: No automated login, no CAPTCHA solving, no OTP reading, and no payment processing.
+* **Zero Credential Collection**: Passwords, OTPs, UPI PINs, CVVs, and banking secrets are strictly rejected at the API boundary and never stored.
+* **Full Regulatory Compliance**: In strict compliance with **Section 143 of the Indian Railways Act, 1989** and **Sections 43 & 66 of the Information Technology Act, 2000**.
+* **Human-in-the-Loop Mandate**: All ticket reservations, CAPTCHA inputs, and payments must be completed manually by the user on the official IRCTC portal.
+
+---
+
+## 🚀 Key Features
+
+### 1. Train Search & Timetables (`/train-search`)
+* Search trains by 5-digit train number, train name, or station pair (e.g. `NDLS` to `BCT`).
+* Comprehensive train cards displaying departure/arrival times, duration, running days, class availability, and train type (Rajdhani, Shatabdi, Vande Bharat, Superfast, Mail/Express).
+* One-click direct assignment to **Primary Train**, **Alternative Train 1**, or **Alternative Train 2** in the Journey Planner.
+
+### 2. Station Route Timelines (`/route`)
+* Interactive station progression tree showing complete halt sequences from origin to destination.
+* Detailed timetable metrics: scheduled arrival, scheduled departure, halt duration (mins), distance, day of journey, and estimated platform number.
+
+### 3. Live Running Status (`/running-status`)
+* Dynamic station-by-station tracking with delay calculation, current location, previous station departed, next station upcoming, and estimated timings.
+* Statutory accuracy notice on every live tracking query:
+  > *"Last updated: <timestamp> — Data may be delayed or unavailable. Verify critical travel information through official railway sources."*
+
+### 4. Detailed Train Overview (`/train-details`)
+* Comprehensive train dashboard consolidating basic specifications, rake composition, running days, route timeline, and live status.
+
+### 5. Multi-Train Journey Planner (`/journey-planner`)
+* Configure origin, destination, journey date, and preferred class.
+* Multi-slot train tracking: Save a **Primary Train** plus **Alternative Train 1** and **Alternative Train 2** to prepare contingency options for peak travel rush.
+* Split-route discovery for finding connecting trains via intermediate railway junctions.
+
+### 6. Tatkal Preparation & Opening Countdown (`/tatkal-prep`)
+* Precise Tatkal opening window calculation:
+  * **AC Classes (1A, 2A, 3A, 3E, CC, EC)**: Opens at **10:00:00 AM IST** on the day prior to departure from origin.
+  * **Non-AC Classes (SL, 2S)**: Opens at **11:00:00 AM IST** on the day prior to departure from origin.
+* Live countdown in `Days : Hours : Mins : Secs` with visual states (`UPCOMING`, `OPENING SOON`, `WINDOW OPEN`).
+* Interactive 8-point pre-booking checklist persisted locally in SQLite.
+
+### 7. Passenger Preparation & Quick Clipboard (`/passengers`)
+* Manage up to 4 passengers (official IRCTC Tatkal quota limit).
+* Validates name (letters only, max 16 chars), age (1-125), gender, berth preference, and meal choice.
+* One-click bulk copy or individual field copy for rapid manual entry into official booking forms.
+
+### 8. Local Milestone Alerts & Notifications (`/notifications`)
+* Audio chime milestones (15m, 10m, 5m, 1m, and 0m) synthesized locally via Web Audio API.
+* Browser desktop push notifications when minimized or working in another tab.
+
+### 9. Settings & Data Governance (`/settings`)
+* Inspect active train data provider (`MockTrainDataProvider` vs `AuthorizedTrainProvider`).
+* View statutory declarations, data safety guarantees, and clear local SQLite database storage.
 
 ---
 
 ## 💻 Prerequisites & Installation
 
-- **Python 3.10+**
+* **Python 3.10+** (Tested on Python 3.10, 3.11, 3.12, 3.13, 3.14)
 
 ```bash
-# Clone or navigate to the directory
-cd d:/Tatkal
+# Clone the repository
+git clone https://github.com/anupmazumdar/RailReady.git
+cd RailReady
 
 # Install dependencies (FastAPI, Uvicorn, Pydantic, Pytest)
 pip install -r requirements.txt
@@ -66,15 +92,15 @@ pip install -r requirements.txt
 
 ---
 
-## 🏃 Running the Application
+## 🏃 Running RailReady
 
-Start the local server with one command:
+Launch the application with the one-click runner:
 
 ```bash
 python run.py
 ```
 
-Then open your browser to:
+Then open your browser at:
 ```
 http://127.0.0.1:8000
 ```
@@ -83,65 +109,68 @@ http://127.0.0.1:8000
 
 ## 🧪 Running Automated Tests
 
-A comprehensive test suite covers time calculations, timezone handling, passenger validation, local SQLite persistence, and security boundaries:
+RailReady includes a comprehensive test suite of 39 automated tests covering provider abstractions, route parsing, delay calculations, cache TTL, journey persistence, time calculations, and security boundaries:
 
 ```bash
-pytest -v tests/
+python -m pytest -v backend/train_info/tests/ tests/
 ```
 
 ---
 
-## 📂 Project Architecture
+## 📂 Project Structure
 
 ```
-d:/Tatkal/
+RailReady/
 ├── backend/
-│   ├── __init__.py
-│   ├── app.py                 # FastAPI application & static asset mounting
-│   └── routes.py              # REST API endpoints (journey, passengers, checklist)
-├── frontend/
-│   ├── index.html             # Dashboard interface
-│   ├── css/
-│   │   └── styles.css         # Glassmorphism dark-mode styles
-│   └── js/
-│       ├── app.js             # UI controller & countdown engine
-│       └── stations.js        # Offline railway station directory
-├── storage/
-│   ├── __init__.py
-│   ├── db.py                  # Local SQLite database manager
-│   └── models.py              # Pydantic models & validation schemas
-├── notifications/
-│   ├── __init__.py
-│   └── service.py             # Milestone alert configurations
-├── utils/
-│   ├── __init__.py
-│   ├── time_calc.py           # Tatkal opening time & IST calculation
-│   └── clipboard.py           # Clipboard formatting engine
-├── security/
-│   ├── __init__.py
-│   └── validator.py           # Strict zero-credential inspection engine
-├── tests/
-│   ├── __init__.py
-│   ├── test_time_calc.py
-│   ├── test_passenger_validation.py
-│   ├── test_clipboard.py
-│   ├── test_storage.py
-│   └── test_security_boundaries.py
-├── docs/
-│   └── architecture.md        # Detailed system design
+│   ├── app.py                     # FastAPI application & static route mounting
+│   ├── routes.py                  # Core REST API (journey, passengers, checklist)
+│   └── train_info/                # Train Information & Running Status Module
+│       ├── models/                # Domain models
+│       ├── schemas/               # Pydantic validation schemas
+│       ├── providers/             # TrainDataProvider abstraction & mock/authorized implementations
+│       │   ├── base.py            # Abstract Base Class (TrainDataProvider)
+│       │   ├── mock_provider.py   # High-fidelity offline simulation provider
+│       │   └── factory.py         # Provider factory & config resolution
+│       ├── services/              # Business logic & in-memory TTL caching
+│       │   ├── cache_service.py   # TTL cache with stale-data grace periods
+│       │   └── train_service.py   # Query coordination & input sanitization
+│       ├── routes/                # Train info endpoints (/api/trains/search, /{num}, /route, /status)
+│       └── tests/                 # Dedicated unit & integration tests
 ├── config/
 │   ├── __init__.py
-│   └── settings.py            # Local configuration
-├── run.py                     # One-click launcher
-├── README.md
-├── SECURITY.md
-├── PRIVACY.md
-├── COMPLIANCE.md
-└── requirements.txt
+│   └── settings.py                # Provider selection, cache TTLs, timeouts
+├── docs/
+│   ├── architecture.md            # Architectural design specifications
+│   ├── DATA_SOURCES.md            # Third-party data sources & legal terms evaluation
+│   └── connecting_pnr_rules.md    # Connecting PNR guidelines
+├── frontend/
+│   ├── index.html                 # 10-view glassmorphism interface
+│   ├── css/
+│   │   └── styles.css             # Glassmorphism dark-mode styles, timeline & meters
+│   └── js/
+│       ├── app.js                 # Unified SPA controller & tab navigator
+│       └── stations.js            # Offline railway station directory
+├── notifications/
+│   └── service.py                 # Milestone chime & alert definitions
+├── security/
+│   └── validator.py               # Zero-credential inspection & anti-bot boundary
+├── storage/
+│   ├── db.py                      # SQLite manager with automatic schema migration
+│   └── models.py                  # Journey & Passenger models (primary + alt trains)
+├── utils/
+│   ├── time_calc.py               # Tatkal window & timezone calculation engine
+│   └── clipboard.py               # Formatting helper for manual copy-paste
+├── tests/                         # Integration, security, and storage tests
+├── run.py                         # Single-command launcher
+├── ARCHITECTURE.md                # System architecture documentation
+├── COMPLIANCE.md                  # Statutory compliance document
+├── SECURITY.md                    # Security policy & threat model
+├── PRIVACY.md                     # Privacy statement & data minimization
+└── requirements.txt               # Project dependencies
 ```
 
 ---
 
-## ⚖️ License & Disclaimer
+## ⚖️ License & Statutory Disclaimer
 
-This software is for personal educational and preparation use only. It is not affiliated with, endorsed by, or sponsored by the Indian Railway Catering and Tourism Corporation (IRCTC) or the Ministry of Railways, Government of India.
+RailReady is open-source software licensed for personal, educational, and preparation purposes. It is **NOT** affiliated with, endorsed by, or sponsored by IRCTC, Where Is My Train, Train Running Status, Google, or Indian Railways.

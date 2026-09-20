@@ -79,6 +79,16 @@ def init_db():
             (key, text, checked)
         )
 
+    # Automatic migration for alternate train slots
+    cursor.execute("PRAGMA table_info(journeys);")
+    existing_cols = [row["name"] for row in cursor.fetchall()]
+    if "primary_train" not in existing_cols:
+        cursor.execute("ALTER TABLE journeys ADD COLUMN primary_train TEXT;")
+    if "alt_train_1" not in existing_cols:
+        cursor.execute("ALTER TABLE journeys ADD COLUMN alt_train_1 TEXT;")
+    if "alt_train_2" not in existing_cols:
+        cursor.execute("ALTER TABLE journeys ADD COLUMN alt_train_2 TEXT;")
+
     conn.commit()
     conn.close()
 
@@ -89,8 +99,8 @@ def save_journey(journey: JourneyCreate, opening_time: str) -> JourneyResponse:
     now_str = datetime.now().isoformat()
 
     cursor.execute("""
-        INSERT INTO journeys (from_station, to_station, journey_date, preferred_train, preferred_class, tatkal_type, expected_opening_time, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO journeys (from_station, to_station, journey_date, preferred_train, preferred_class, tatkal_type, primary_train, alt_train_1, alt_train_2, expected_opening_time, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         journey.from_station,
         journey.to_station,
@@ -98,6 +108,9 @@ def save_journey(journey: JourneyCreate, opening_time: str) -> JourneyResponse:
         journey.preferred_train,
         journey.preferred_class,
         journey.tatkal_type.value,
+        journey.primary_train or journey.preferred_train,
+        journey.alt_train_1,
+        journey.alt_train_2,
         opening_time,
         now_str
     ))
@@ -144,6 +157,9 @@ def get_journey(journey_id: int) -> Optional[JourneyResponse]:
         preferred_train=row["preferred_train"],
         preferred_class=row["preferred_class"],
         tatkal_type=TatkalType(row["tatkal_type"]),
+        primary_train=row["primary_train"] if "primary_train" in row.keys() and row["primary_train"] else row["preferred_train"],
+        alt_train_1=row["alt_train_1"] if "alt_train_1" in row.keys() else None,
+        alt_train_2=row["alt_train_2"] if "alt_train_2" in row.keys() else None,
         expected_opening_time=row["expected_opening_time"],
         passengers=passengers,
         created_at=row["created_at"]
