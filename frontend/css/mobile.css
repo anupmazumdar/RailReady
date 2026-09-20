@@ -1289,3 +1289,174 @@ body.force-mobile-view .mobile-bottom-nav {
     margin: 2px 0;
 }
 
+/* Dashboard Specific Cards (Matching User's Current Screen) */
+.m-status-badge-upcoming {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #93c5fd;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+}
+
+.m-card-footer-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f1522;
+    padding: 10px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--m-border);
+    margin-top: 12px;
+}
+
+.m-footer-sub {
+    font-size: 0.72rem;
+    color: var(--m-text-dim);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.m-footer-val {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #93c5fd;
+    font-family: var(--font-mono, monospace);
+    margin-top: 2px;
+}
+
+.m-btn-mini-primary {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.m-btn-mini-primary:hover {
+    background: #1d4ed8;
+}
+
+.m-btn-mini-green {
+    background: var(--m-green);
+    color: #fff;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.m-btn-mini-green:hover {
+    background: var(--m-green-hover);
+}
+
+.m-card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.m-card-title {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Planned Trains List */
+.m-planned-trains-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.m-planned-train-box {
+    background: #0f1522;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--m-border);
+}
+
+.m-train-slot-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.slot-primary { color: #60a5fa; }
+.slot-alt1 { color: #34d399; }
+.slot-alt2 { color: #f59e0b; }
+
+.m-train-slot-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #f1f5f9;
+}
+
+/* Progress Bar */
+.m-progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #0f1522;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--m-border);
+}
+
+.m-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+/* Tags and Reminder Rows */
+.m-badge-tag-blue {
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #93c5fd;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.m-badge-tag-green {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34d399;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.m-reminder-row {
+    background: #0f1522;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--m-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+

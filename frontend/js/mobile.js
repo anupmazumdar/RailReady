@@ -1,17 +1,34 @@
 /**
  * RailReady Mobile App Controller
- * Adapts RailReady's core offline railway & Tatkal preparation features
- * into the clean mobile card layout, drawer, and bottom navigation.
+ * Adapts RailReady's actual current features (Dashboard, Tatkal Countdown,
+ * Prepared Passengers, Booking Readiness, Route Search, Reminders & Alerts)
+ * into the Android mobile card layout, drawer, and bottom navigation.
  */
 (function() {
-    let mCurrentView = "trains";
-    let mRecentSearches = [
-        { trainNo: "12987", trainName: "Ajmer SF Express", from: "DHN", to: "JP" },
-        { trainNo: "12307", trainName: "Jodhpur Superfast Express", from: "DHN", to: "JP" },
-        { trainNo: "12302", trainName: "Howrah Rajdhani Express", from: "NDLS", to: "HWH" },
-        { trainNo: "12952", trainName: "Mumbai Tejas Rajdhani", from: "NDLS", to: "BCT" },
-        { trainNo: "63556", trainName: "Barkakana - Asansol MEMU", from: "CRP", to: "DHN" }
-    ];
+    let mCurrentView = "dashboard";
+    let activeJourneyData = null;
+    let preparedPassengersList = [];
+    let mTextareaFormat = "full";
+    let mCategoryFilter = "ALL";
+    let currentSearchResults = [];
+    let mCountdownInterval = null;
+
+    // Load recent searches from localStorage or initialize with user's corridor
+    let mRecentSearches = [];
+    try {
+        const stored = localStorage.getItem("railready_m_recent");
+        if (stored) {
+            mRecentSearches = JSON.parse(stored);
+        }
+    } catch (e) {}
+
+    if (!mRecentSearches || !mRecentSearches.length) {
+        mRecentSearches = [
+            { trainNo: "12707", trainName: "Jaipur - Pune Rajdhani Express", from: "JP", to: "PUNE" },
+            { trainNo: "12302", trainName: "Howrah Rajdhani Express", from: "NDLS", to: "HWH" },
+            { trainNo: "12952", trainName: "Mumbai Tejas Rajdhani", from: "NDLS", to: "BCT" }
+        ];
+    }
 
     const quotaList = [
         { code: "TQ", name: "Tatkal Quota (10 AM AC / 11 AM Non-AC)" },
@@ -21,8 +38,6 @@
         { code: "SS", name: "Senior Citizen Quota" }
     ];
     let selectedQuotaIdx = 0;
-    let mTextareaFormat = "full";
-    let mCountdownTimer = null;
 
     const $ = id => document.getElementById(id);
     const $$ = sel => document.querySelectorAll(sel);
@@ -36,18 +51,20 @@
         setupMobileSearch();
         setupMobileTatkal();
         setupMobilePassengers();
+        setupMobileAlerts();
         setupMobileAlternates();
         setupMobileDrawer();
         setupDesktopToggle();
         renderSearchHistory();
         loadMobileData();
+        startCountdownTicker();
     }
 
-    // ================= DATA LOADING & SYNCHRONIZATION =================
+    // ================= DATA SYNCHRONIZATION =================
     async function loadMobileData() {
         try {
             await Promise.all([
-                refreshMobileCountdown(),
+                refreshMobileJourneyAndCountdown(),
                 refreshMobilePassengers(),
                 refreshMobileChecklist()
             ]);
@@ -67,56 +84,59 @@
         const drawerBtn = $("m-btn-drawer");
         const headerTitle = $("m-header-title");
         const micBtn = $("m-btn-mic");
-        const shareBtn = $("m-btn-share");
-        const menuBtn = $("m-btn-menu");
 
         // Update Bottom Nav active state
         $$(".bottom-nav-tab").forEach(tab => {
             tab.classList.toggle("active", tab.getAttribute("data-mview") === viewName);
         });
 
-        if (viewName === "trains") {
+        if (viewName === "dashboard") {
             drawerBtn?.classList.remove("hidden");
             backBtn?.classList.add("hidden");
-            if (headerTitle) headerTitle.textContent = "RailReady Trains";
+            if (headerTitle) headerTitle.textContent = "RailReady Dashboard";
             micBtn?.classList.remove("hidden");
-            shareBtn?.classList.add("hidden");
-            menuBtn?.classList.add("hidden");
+            $("m-tab-dashboard")?.classList.add("active");
+            refreshMobileJourneyAndCountdown();
+            refreshMobilePassengers();
+            refreshMobileChecklist();
+        } else if (viewName === "trains") {
+            drawerBtn?.classList.remove("hidden");
+            backBtn?.classList.add("hidden");
+            if (headerTitle) headerTitle.textContent = "Train Information & Search";
+            micBtn?.classList.remove("hidden");
             $("m-tab-trains")?.classList.add("active");
+            executeMobileTrainSearch();
         } else if (viewName === "results") {
             drawerBtn?.classList.add("hidden");
             backBtn?.classList.remove("hidden");
             if (headerTitle) headerTitle.textContent = "Search results";
             micBtn?.classList.add("hidden");
-            shareBtn?.classList.remove("hidden");
-            menuBtn?.classList.remove("hidden");
         } else if (viewName === "tatkal") {
             drawerBtn?.classList.remove("hidden");
             backBtn?.classList.add("hidden");
             if (headerTitle) headerTitle.textContent = "Tatkal Preparation";
             micBtn?.classList.add("hidden");
-            shareBtn?.classList.add("hidden");
-            menuBtn?.classList.remove("hidden");
             $("m-tab-tatkal")?.classList.add("active");
-            refreshMobileCountdown();
+            refreshMobileJourneyAndCountdown();
             refreshMobileChecklist();
         } else if (viewName === "passengers") {
             drawerBtn?.classList.remove("hidden");
             backBtn?.classList.add("hidden");
             if (headerTitle) headerTitle.textContent = "Prepared Passengers";
             micBtn?.classList.add("hidden");
-            shareBtn?.classList.add("hidden");
-            menuBtn?.classList.remove("hidden");
             $("m-tab-passengers")?.classList.add("active");
             refreshMobilePassengers();
+        } else if (viewName === "alerts") {
+            drawerBtn?.classList.remove("hidden");
+            backBtn?.classList.add("hidden");
+            if (headerTitle) headerTitle.textContent = "Reminders & Alerts";
+            micBtn?.classList.add("hidden");
+            $("m-tab-alerts")?.classList.add("active");
         } else if (viewName === "alternates") {
             drawerBtn?.classList.remove("hidden");
             backBtn?.classList.add("hidden");
             if (headerTitle) headerTitle.textContent = "Split Routes & Alternatives";
             micBtn?.classList.add("hidden");
-            shareBtn?.classList.add("hidden");
-            menuBtn?.classList.remove("hidden");
-            $("m-tab-alternates")?.classList.add("active");
             loadMobileSplitRoutes();
         }
 
@@ -124,13 +144,27 @@
     };
 
     function setupMobileNavigation() {
-        $("m-btn-back")?.addEventListener("click", () => setMobileView("trains"));
+        $("m-btn-back")?.addEventListener("click", () => {
+            if (mCurrentView === "results") {
+                setMobileView("trains");
+            } else {
+                setMobileView("dashboard");
+            }
+        });
 
         $$(".bottom-nav-tab").forEach(tab => {
             tab.addEventListener("click", () => {
                 const target = tab.getAttribute("data-mview");
                 if (target) setMobileView(target);
             });
+        });
+
+        $("m-btn-open-irctc-top")?.addEventListener("click", () => {
+            if (window.openIrctcModal) window.openIrctcModal();
+            else {
+                const modal = $("modal-irctc-guide");
+                if (modal) modal.classList.add("active");
+            }
         });
     }
 
@@ -153,7 +187,6 @@
         drawerBtn?.addEventListener("click", openDrawer);
         backdrop?.addEventListener("click", closeDrawer);
 
-        // Drawer Links
         const bindDrawerNav = (id, viewName) => {
             $(id)?.addEventListener("click", () => {
                 closeDrawer();
@@ -161,40 +194,37 @@
             });
         };
 
+        bindDrawerNav("drawer-nav-dashboard", "dashboard");
         bindDrawerNav("drawer-nav-trains", "trains");
         bindDrawerNav("drawer-nav-tatkal", "tatkal");
         bindDrawerNav("drawer-nav-passengers", "passengers");
+        bindDrawerNav("drawer-nav-alerts", "alerts");
         bindDrawerNav("drawer-nav-alternates", "alternates");
 
         $("drawer-update-timetable")?.addEventListener("click", () => {
             closeDrawer();
-            if (window.showToast) window.showToast("🔄 Offline timetable synced (26 active corridors)");
+            showMobileToast("🔄 Offline timetable synced (26 active corridors)");
         });
 
         $("drawer-clear-recent")?.addEventListener("click", () => {
             mRecentSearches = [];
+            try { localStorage.removeItem("railready_m_recent"); } catch (e) {}
             renderSearchHistory();
             closeDrawer();
-            if (window.showToast) window.showToast("🗑️ Recent searches cleared");
+            showMobileToast("🗑️ Recent searches cleared");
         });
 
         $("drawer-open-irctc")?.addEventListener("click", () => {
             closeDrawer();
-            if (window.openIrctcModal) window.openIrctcModal();
+            const modal = $("modal-irctc-guide");
+            if (modal) modal.classList.add("active");
         });
 
         $("drawer-switch-desktop")?.addEventListener("click", () => {
             closeDrawer();
             document.body.classList.remove("force-mobile-view");
             document.body.classList.add("force-desktop-view");
-            if (window.showToast) window.showToast("💻 Switched to Desktop Dashboard");
-        });
-
-        $("drawer-settings")?.addEventListener("click", () => {
-            closeDrawer();
-            document.body.classList.remove("force-mobile-view");
-            document.body.classList.add("force-desktop-view");
-            if (window.switchView) window.switchView("settings");
+            showMobileToast("💻 Switched to Desktop Dashboard");
         });
     }
 
@@ -203,8 +233,8 @@
         $("btn-toggle-mobile")?.addEventListener("click", () => {
             document.body.classList.remove("force-desktop-view");
             document.body.classList.add("force-mobile-view");
-            setMobileView("trains");
-            if (window.showToast) window.showToast("📱 Switched to RailReady Mobile Experience");
+            setMobileView("dashboard");
+            showMobileToast("📱 Switched to RailReady Mobile Experience");
         });
     }
 
@@ -215,7 +245,7 @@
         if (val.includes(" - ")) return val.split(" - ")[0].trim();
         const parts = val.split(" ");
         if (parts[0].length >= 2 && parts[0].length <= 5) return parts[0];
-        return val.substring(0, 3);
+        return val.substring(0, 4);
     }
 
     function escapeHtml(str) {
@@ -223,7 +253,372 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // ================= VIEW 1: TRAIN SEARCH & TIMELINE =================
+    function showMobileToast(msg) {
+        if (window.showToast) {
+            window.showToast(msg);
+        } else {
+            const container = $("toast-container");
+            if (!container) return;
+            const toast = document.createElement("div");
+            toast.className = "toast";
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    }
+
+    // ================= 1. DASHBOARD & LIVE TATKAL COUNTDOWN =================
+    async function refreshMobileJourneyAndCountdown() {
+        try {
+            const res = await fetch("/api/journey/latest");
+            if (!res.ok) return;
+            const data = await res.json();
+            activeJourneyData = data.journey;
+
+            // Render Planned Trains on Dashboard
+            if (activeJourneyData) {
+                const primaryEl = $("m-dash-primary-train");
+                const alt1El = $("m-dash-alt1-train");
+                const alt2El = $("m-dash-alt2-train");
+                if (primaryEl) primaryEl.textContent = activeJourneyData.primary_train || activeJourneyData.preferred_train || "Not Selected";
+                if (alt1El) alt1El.textContent = activeJourneyData.alt_train_1 || "None";
+                if (alt2El) alt2El.textContent = activeJourneyData.alt_train_2 || "None";
+
+                // Pre-populate Search and Tatkal station inputs from user's active journey
+                if ($("m-input-from") && !$("m-input-from").dataset.userModified) {
+                    $("m-input-from").value = activeJourneyData.from_station || "JP";
+                    if ($("m-badge-from")) $("m-badge-from").textContent = extractCode(activeJourneyData.from_station || "JP");
+                }
+                if ($("m-input-to") && !$("m-input-to").dataset.userModified) {
+                    $("m-input-to").value = activeJourneyData.to_station || "PUNE";
+                    if ($("m-badge-to")) $("m-badge-to").textContent = extractCode(activeJourneyData.to_station || "PUNE");
+                }
+                if ($("m-tatkal-from")) {
+                    $("m-tatkal-from").value = activeJourneyData.from_station || "JP";
+                    if ($("m-tatkal-badge-from")) $("m-tatkal-badge-from").textContent = extractCode(activeJourneyData.from_station || "JP");
+                }
+                if ($("m-tatkal-to")) {
+                    $("m-tatkal-to").value = activeJourneyData.to_station || "PUNE";
+                    if ($("m-tatkal-badge-to")) $("m-tatkal-badge-to").textContent = extractCode(activeJourneyData.to_station || "PUNE");
+                }
+
+                // Tatkal opening time
+                const openTimeStr = data.opening_time || activeJourneyData.expected_opening_time || "--";
+                if ($("m-dash-expected-time")) $("m-dash-expected-time").textContent = openTimeStr;
+            }
+
+            updateCountdownDisplay(data.countdown);
+        } catch (e) {}
+    }
+
+    function updateCountdownDisplay(cd) {
+        if (!cd) return;
+        const d = String(cd.days || 0).padStart(2, "0");
+        const h = String(cd.hours || 0).padStart(2, "0");
+        const m = String(cd.minutes || 0).padStart(2, "0");
+        const s = String(cd.seconds || 0).padStart(2, "0");
+
+        // Update Dashboard Countdown
+        if ($("m-cd-days")) $("m-cd-days").textContent = d;
+        if ($("m-cd-hours")) $("m-cd-hours").textContent = h;
+        if ($("m-cd-mins")) $("m-cd-mins").textContent = m;
+        if ($("m-cd-secs")) $("m-cd-secs").textContent = s;
+        if ($("m-cd-msg")) $("m-cd-msg").textContent = cd.message || `Tatkal opening in: ${h}:${m}:${s}`;
+        if ($("m-dash-status-badge")) {
+            $("m-dash-status-badge").textContent = cd.status || (cd.is_open ? "OPEN" : "UPCOMING");
+            $("m-dash-status-badge").className = cd.is_open ? "m-badge-tag-green" : "m-status-badge-upcoming";
+        }
+
+        // Update Tatkal Tab Countdown
+        if ($("m-tatkal-cd-days")) $("m-tatkal-cd-days").textContent = d;
+        if ($("m-tatkal-cd-hours")) $("m-tatkal-cd-hours").textContent = h;
+        if ($("m-tatkal-cd-mins")) $("m-tatkal-cd-mins").textContent = m;
+        if ($("m-tatkal-cd-secs")) $("m-tatkal-cd-secs").textContent = s;
+        if ($("m-tatkal-cd-msg")) $("m-tatkal-cd-msg").textContent = cd.message || "Tatkal window opens at 10:00 AM IST (AC) / 11:00 AM IST (Non-AC).";
+    }
+
+    function startCountdownTicker() {
+        if (mCountdownInterval) clearInterval(mCountdownInterval);
+        mCountdownInterval = setInterval(async () => {
+            if (mCurrentView === "dashboard" || mCurrentView === "tatkal") {
+                try {
+                    const res = await fetch("/api/journey/latest");
+                    if (res.ok) {
+                        const data = await res.json();
+                        updateCountdownDisplay(data.countdown);
+                    }
+                } catch (e) {}
+            }
+        }, 1000);
+    }
+
+    // ================= 2. PREPARED PASSENGERS & TEXT AREA =================
+    async function refreshMobilePassengers() {
+        try {
+            const res = await fetch("/api/passengers");
+            if (!res.ok) return;
+            preparedPassengersList = await res.json();
+
+            // Update Counts
+            const dashCount = $("m-dash-pax-count");
+            const paxTabCount = $("m-pax-count-badge");
+            if (dashCount) dashCount.textContent = preparedPassengersList.length;
+            if (paxTabCount) paxTabCount.textContent = `${preparedPassengersList.length}/4 Prepared`;
+
+            // Render Dashboard Passenger Cards
+            renderDashboardPassengers(preparedPassengersList);
+
+            // Render Passenger Tab Cards
+            renderPassengersTabList(preparedPassengersList);
+
+            // Update Both Text Areas
+            updateMobilePassengerTextareas();
+        } catch (e) {}
+    }
+
+    function renderDashboardPassengers(passengers) {
+        const container = $("m-dash-passengers-list");
+        if (!container) return;
+
+        if (!passengers.length) {
+            container.innerHTML = `<div style="color: var(--m-text-dim); font-size: 0.84rem; text-align: center; padding: 10px;">No passengers prepared. Tap Manage to add.</div>`;
+            return;
+        }
+
+        container.innerHTML = passengers.map((p, idx) => `
+            <div class="m-passenger-card" style="margin-bottom: 8px; padding: 10px 12px;">
+                <div class="m-pax-top">
+                    <span class="m-pax-name">${idx + 1}. ${escapeHtml(p.name)} (${p.age}y, ${p.gender})</span>
+                    <button class="m-btn-mini" onclick="copyMobileField('${escapeHtml(p.name)}', 'Name')">Copy Name</button>
+                </div>
+                <div class="m-pax-badges-row" style="margin-bottom: 0;">
+                    <span class="m-pax-badge">🛏️ ${escapeHtml(p.berth_preference || 'No Preference')}</span>
+                    <span class="m-pax-badge">🥗 ${escapeHtml(p.meal_preference || 'None')}</span>
+                    ${p.senior_citizen_opt ? '<span class="m-pax-badge" style="color: #fef08a;">👴 Senior Concession</span>' : ''}
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function renderPassengersTabList(passengers) {
+        const container = $("m-passengers-list");
+        if (!container) return;
+
+        if (!passengers.length) {
+            container.innerHTML = `<div style="text-align: center; color: var(--m-text-dim); padding: 20px;">No passengers prepared yet. Add up to 4 for Tatkal.</div>`;
+            return;
+        }
+
+        container.innerHTML = passengers.map((p, idx) => `
+            <div class="m-passenger-card">
+                <div class="m-pax-top">
+                    <span class="m-pax-name">${idx + 1}. ${escapeHtml(p.name)}</span>
+                    <span class="m-pax-meta">${p.age} yrs • ${p.gender}</span>
+                </div>
+                <div class="m-pax-badges-row">
+                    <span class="m-pax-badge">🛏️ ${escapeHtml(p.berth_preference || 'No Preference')}</span>
+                    <span class="m-pax-badge">🥗 ${escapeHtml(p.meal_preference || 'None')}</span>
+                    ${p.senior_citizen_opt ? '<span class="m-pax-badge" style="color: #fef08a;">👴 Senior Concession</span>' : ''}
+                </div>
+                <div class="m-pax-actions">
+                    <button class="m-btn-mini" onclick="copyMobileField('${escapeHtml(p.name)}', 'Passenger Name')">📋 Name</button>
+                    <button class="m-btn-mini" onclick="copyMobileField('${p.age}', 'Age')">📋 Age</button>
+                    <button class="m-btn-mini" onclick="copyMobileField('${escapeHtml(p.berth_preference || '')}', 'Berth')">🛏️ Berth</button>
+                    <button class="m-btn-mini" style="color: #ef4444;" onclick="deleteMobilePassenger(${p.id})">🗑️</button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function generateMobilePassengerSummary(passengers, format = "full") {
+        if (!passengers || !passengers.length) {
+            return "No passenger details prepared. Add passengers in Passenger Details tab.";
+        }
+        if (format === "row") {
+            return ["# | Name | Age | Gender | Berth | Meal | Senior Citizen", ...passengers.map((p, idx) => `${idx + 1}, ${p.name}, ${p.age}, ${p.gender}, ${p.berth_preference}, ${p.meal_preference}, ${p.senior_citizen_opt ? 'Yes' : 'No'}`)].join("\n");
+        }
+        if (format === "irctc") {
+            return passengers.map((p, idx) => `${idx + 1}. ${p.name} | ${p.age}y | ${p.gender} | Berth: ${p.berth_preference} | Meal: ${p.meal_preference}${p.senior_citizen_opt ? ' | [Senior Citizen Concession]' : ''}`).join("\n");
+        }
+        const lines = [`=== PREPARED PASSENGERS (${passengers.length}/4) ===`];
+        if (activeJourneyData) {
+            lines.push(`Route: ${activeJourneyData.from_station} -> ${activeJourneyData.to_station} | Date: ${activeJourneyData.journey_date}`);
+            lines.push(`Train: ${activeJourneyData.primary_train || activeJourneyData.preferred_train || 'N/A'} (${activeJourneyData.preferred_class || '3A'}) | Quota: Tatkal`);
+            lines.push("--------------------------------------------------");
+        }
+        passengers.forEach((p, idx) => {
+            lines.push(`Passenger ${idx + 1}:\n  Full Name:       ${p.name}\n  Age & Gender:    ${p.age} years | ${p.gender}\n  Berth Choice:    ${p.berth_preference}\n  Meal Choice:     ${p.meal_preference}\n  Senior Citizen:  ${p.senior_citizen_opt ? 'Yes (Concession Opted)' : 'No'}${idx < passengers.length - 1 ? '\n' : ''}`);
+        });
+        lines.push("==================================================\n* Copy into IRCTC booking form.");
+        return lines.join("\n");
+    }
+
+    function updateMobilePassengerTextareas() {
+        const text = generateMobilePassengerSummary(preparedPassengersList, mTextareaFormat);
+        const dashTa = $("m-dash-passenger-textarea");
+        const paxTa = $("m-passenger-textarea");
+        if (dashTa) dashTa.value = text;
+        if (paxTa) paxTa.value = text;
+    }
+
+    window.switchMobileTextareaFormat = function(format) {
+        mTextareaFormat = format;
+        $$(".m-fmt-pill").forEach(p => p.classList.remove("active"));
+        const pillDash = $(`m-dash-pill-${format}`);
+        if (pillDash) pillDash.classList.add("active");
+        updateMobilePassengerTextareas();
+    };
+
+    window.copyMobileTextareaContent = async function(taId) {
+        const ta = $(taId);
+        if (!ta || !ta.value.trim() || ta.value.startsWith("No passenger")) {
+            showMobileToast("⚠️ No passenger details to copy.");
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(ta.value);
+            showMobileToast("📋 All passenger details copied to clipboard!");
+        } catch (e) {
+            ta.focus();
+            ta.select();
+            document.execCommand("copy");
+            showMobileToast("📋 Copied via fallback!");
+        }
+    };
+
+    window.selectMobileTextarea = function(taId) {
+        const ta = $(taId);
+        if (ta) {
+            ta.focus();
+            ta.select();
+            showMobileToast("🔍 All text selected! Press Ctrl+C.");
+        }
+    };
+
+    window.copyMobileField = async function(val, label) {
+        try {
+            await navigator.clipboard.writeText(val);
+            showMobileToast(`📋 Copied ${label}: ${val}`);
+        } catch (e) {}
+    };
+
+    window.deleteMobilePassenger = async function(id) {
+        try {
+            await fetch(`/api/passengers/${id}`, { method: "DELETE" });
+            refreshMobilePassengers();
+            if (window.loadPassengers) window.loadPassengers();
+            showMobileToast("🗑️ Passenger removed.");
+        } catch (e) {}
+    };
+
+    function setupMobilePassengers() {
+        $("m-dash-btn-copy-all")?.addEventListener("click", () => {
+            copyMobileTextareaContent("m-dash-passenger-textarea");
+        });
+
+        // Passenger tab pills
+        $$(".m-fmt-pill").forEach(pill => {
+            pill.addEventListener("click", () => {
+                const fmt = pill.getAttribute("data-fmt");
+                if (fmt) switchMobileTextareaFormat(fmt);
+            });
+        });
+
+        $("m-btn-copy-textarea")?.addEventListener("click", () => {
+            copyMobileTextareaContent("m-passenger-textarea");
+        });
+
+        $("m-btn-select-all-textarea")?.addEventListener("click", () => {
+            selectMobileTextarea("m-passenger-textarea");
+        });
+
+        // Add Passenger Form
+        $("m-form-add-passenger")?.addEventListener("submit", async e => {
+            e.preventDefault();
+            const name = $("m-input-pax-name")?.value.trim();
+            const age = parseInt($("m-input-pax-age")?.value);
+            const gender = $("m-select-pax-gender")?.value || "MALE";
+            const berth = $("m-select-pax-berth")?.value || "NO_PREFERENCE";
+            const meal = $("m-select-pax-meal")?.value || "VEG";
+            const senior = $("m-check-pax-senior")?.checked || false;
+
+            if (!name || isNaN(age)) {
+                showMobileToast("⚠️ Please enter passenger name and age.");
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/passengers", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name, age, gender,
+                        berth_preference: berth,
+                        meal_preference: meal,
+                        senior_citizen_opt: senior
+                    })
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || "Failed to add passenger");
+                }
+                $("m-form-add-passenger").reset();
+                refreshMobilePassengers();
+                if (window.loadPassengers) window.loadPassengers();
+                showMobileToast(`✅ Added passenger ${name}`);
+            } catch (err) {
+                showMobileToast(`⚠️ ${err.message}`);
+            }
+        });
+    }
+
+    // ================= 3. BOOKING READINESS CHECKLIST =================
+    async function refreshMobileChecklist() {
+        const container = $("m-checklist-container");
+        try {
+            const res = await fetch("/api/checklist");
+            if (!res.ok) return;
+            const items = await res.json();
+
+            let checkedCount = 0;
+            items.forEach(it => { if (it.checked) checkedCount++; });
+            const total = items.length;
+            const pct = total ? Math.round((checkedCount / total) * 100) : 0;
+
+            // Update Progress Bar on Dashboard
+            const fill = $("m-dash-checklist-fill");
+            const text = $("m-dash-checklist-text");
+            if (fill) fill.style.width = `${pct}%`;
+            if (text) text.textContent = `${checkedCount} of ${total} Completed (${pct}%)`;
+
+            // Render in Tatkal Tab
+            if (container) {
+                container.innerHTML = items.map(item => `
+                    <div class="m-check-row ${item.checked ? 'checked' : ''}" onclick="toggleMobileChecklistItem('${item.item_key || item.key}', ${!item.checked})">
+                        <div class="m-checkbox-custom">${item.checked ? '✓' : ''}</div>
+                        <span class="m-check-text">${escapeHtml(item.item_text || item.text)}</span>
+                    </div>
+                `).join("");
+            }
+        } catch (e) {}
+    }
+
+    window.toggleMobileChecklistItem = async function(key, checked) {
+        try {
+            await fetch(`/api/checklist/${key}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ item_key: key, checked })
+            });
+            refreshMobileChecklist();
+            if (window.loadChecklist) window.loadChecklist();
+        } catch (e) {}
+    };
+
+    // ================= 4. TRAIN SEARCH & CATEGORY FILTERS =================
     function setupMobileSearch() {
         const inputFrom = $("m-input-from");
         const inputTo = $("m-input-to");
@@ -235,8 +630,14 @@
             if (badgeTo && inputTo) badgeTo.textContent = extractCode(inputTo.value);
         };
 
-        inputFrom?.addEventListener("input", updateBadges);
-        inputTo?.addEventListener("input", updateBadges);
+        inputFrom?.addEventListener("input", () => {
+            inputFrom.dataset.userModified = "true";
+            updateBadges();
+        });
+        inputTo?.addEventListener("input", () => {
+            inputTo.dataset.userModified = "true";
+            updateBadges();
+        });
 
         $("m-clear-from")?.addEventListener("click", () => {
             if (inputFrom) { inputFrom.value = ""; inputFrom.focus(); updateBadges(); }
@@ -252,76 +653,82 @@
                 inputFrom.value = inputTo.value;
                 inputTo.value = tmp;
                 updateBadges();
+                executeMobileTrainSearch();
             }
         });
 
-        // Quick search shortcuts
-        $("m-quick-search-1")?.addEventListener("click", () => executeSearchForTrain("12307"));
-        $("m-quick-search-2")?.addEventListener("click", () => executeSearchForTrain("12987"));
-
-        // Find trains CTA
         $("m-btn-find-trains")?.addEventListener("click", () => {
-            const src = inputFrom?.value.trim() || "Dhanbad Junction";
-            const dst = inputTo?.value.trim() || "Jaipur Junction";
-            executeSearchBetweenStations(src, dst);
+            executeMobileTrainSearch();
+        });
+
+        // Category Filter Pills
+        $$("#m-search-cat-pills .m-filter-pill").forEach(pill => {
+            pill.addEventListener("click", () => {
+                $$("#m-search-cat-pills .m-filter-pill").forEach(p => p.classList.remove("active"));
+                pill.classList.add("active");
+                mCategoryFilter = pill.getAttribute("data-cat") || "ALL";
+                filterAndRenderTrainCards();
+            });
         });
 
         $("m-sticky-seat-bar")?.addEventListener("click", () => {
-            if (window.showToast) window.showToast("🎟️ Check Tatkal & General seat availability on IRCTC");
-            if (window.openIrctcModal) window.openIrctcModal();
+            showMobileToast("🎟️ Check Tatkal & General seat availability on IRCTC");
+            const modal = $("modal-irctc-guide");
+            if (modal) modal.classList.add("active");
         });
     }
 
-    async function executeSearchBetweenStations(src, dst) {
+    async function executeMobileTrainSearch() {
+        const src = $("m-input-from")?.value.trim() || "JP";
+        const dst = $("m-input-to")?.value.trim() || "PUNE";
         const srcCode = extractCode(src);
         const dstCode = extractCode(dst);
 
         const bannerText = $("m-banner-route-text");
-        if (bannerText) bannerText.innerHTML = `${srcCode} - ${src} &nbsp;➔&nbsp; ${dstCode} - ${dst}`;
+        if (bannerText) bannerText.innerHTML = `${srcCode} &nbsp;➔&nbsp; ${dstCode}`;
 
-        setMobileView("results");
-        const container = $("m-results-cards");
-        if (container) container.innerHTML = `<div style="text-align: center; color: var(--m-text-muted); padding: 30px;">🔍 Searching trains between ${srcCode} and ${dstCode}...</div>`;
+        const container = $("m-trains-cards-list");
+        if (container) container.innerHTML = `<div style="text-align: center; color: var(--m-text-muted); padding: 24px;">🔍 Searching trains between ${srcCode} and ${dstCode}...</div>`;
 
         try {
             const res = await fetch(`/api/trains/search?from_station=${srcCode}&to_station=${dstCode}`);
             if (!res.ok) throw new Error("Search failed");
-            const trains = await res.json();
-            renderTrainCards(trains, srcCode);
+            currentSearchResults = await res.json();
+            filterAndRenderTrainCards();
+            saveSearchToHistory(srcCode, dstCode);
         } catch (e) {
-            renderFallbackReferenceCards();
+            if (container) container.innerHTML = `<div style="text-align: center; color: var(--m-text-dim); padding: 20px;">No trains found for ${srcCode} ➔ ${dstCode}. Try NDLS to HWH or BCT.</div>`;
         }
     }
 
-    async function executeSearchForTrain(trainNumber) {
-        setMobileView("results");
-        const container = $("m-results-cards");
-        if (container) container.innerHTML = `<div style="text-align: center; color: var(--m-text-muted); padding: 30px;">🔍 Searching train ${trainNumber}...</div>`;
+    function filterAndRenderTrainCards() {
+        const container = $("m-trains-cards-list");
+        const resultsContainer = $("m-results-cards");
+        if (!container && !resultsContainer) return;
 
-        try {
-            const res = await fetch(`/api/trains/${trainNumber}`);
-            if (!res.ok) throw new Error("Not found");
-            const t = await res.json();
-            const bannerText = $("m-banner-route-text");
-            if (bannerText) bannerText.innerHTML = `${t.source_code} - ${t.source_name} &nbsp;➔&nbsp; ${t.dest_code} - ${t.dest_name}`;
-            renderTrainCards([t], t.source_code);
-        } catch (e) {
-            renderFallbackReferenceCards();
+        let filtered = currentSearchResults;
+        if (mCategoryFilter !== "ALL") {
+            filtered = currentSearchResults.filter(t => {
+                const name = (t.train_name || "").toLowerCase();
+                const type = (t.train_type || "").toLowerCase();
+                if (mCategoryFilter === "Rajdhani") return name.includes("rajdhani") || type.includes("rajdhani");
+                if (mCategoryFilter === "Special") return name.includes("special") || type.includes("special");
+                if (mCategoryFilter === "Mail/Express") return name.includes("express") || name.includes("mail") || name.includes("sf");
+                if (mCategoryFilter === "Passenger") return name.includes("passenger") || name.includes("memu") || name.includes("local");
+                return true;
+            });
         }
-    }
 
-    function renderTrainCards(trains, srcCode) {
-        const container = $("m-results-cards");
-        if (!container) return;
-
-        if (!trains || !trains.length) {
-            renderFallbackReferenceCards();
+        if (!filtered.length) {
+            const emptyHtml = `<div style="text-align: center; color: var(--m-text-dim); padding: 20px;">No trains matching category "${mCategoryFilter}".</div>`;
+            if (container) container.innerHTML = emptyHtml;
+            if (resultsContainer) resultsContainer.innerHTML = emptyHtml;
             return;
         }
 
-        container.innerHTML = trains.map((t, idx) => {
-            const isRunningToday = idx % 2 === 1 || t.train_number === "12987" || t.train_number === "12307";
-            const badgeClass = isRunningToday ? "badge-blue" : "badge-gray";
+        const cardsHtml = filtered.map(t => {
+            const isRajdhani = (t.train_name || "").toLowerCase().includes("rajdhani");
+            const badgeClass = isRajdhani ? "badge-blue" : "badge-gray";
 
             let daysHtml = "";
             if (t.running_days && t.running_days.length >= 7) {
@@ -336,20 +743,17 @@
                 }).join(" ")}</span>`;
             }
 
-            let statusHtml = "";
-            if (isRunningToday) {
-                const delayMins = (parseInt(t.train_number) % 15) + 3;
-                statusHtml = `<div class="m-train-status-line status-live">Left ${srcCode || t.source_code} at ${t.departure_time} (+${delayMins}m)</div>`;
-            } else {
-                statusHtml = `<div class="m-train-status-line status-not-running">Not running today</div>`;
-            }
+            const delayMins = (parseInt(t.train_number) % 15);
+            const statusHtml = delayMins > 0
+                ? `<div class="m-train-status-line status-live">Live: Running ${delayMins}m late</div>`
+                : `<div class="m-train-status-line status-live" style="color: #34d399;">Live: On Time</div>`;
 
             return `
                 <div class="m-train-card" onclick="openTrainMobileDetails('${t.train_number}')">
                     <div class="m-train-card-header">
                         <span class="m-train-number-badge ${badgeClass}">${t.train_number}</span>
                         <div class="m-train-timing-line">
-                            ${t.departure_time} <span class="duration-sep">—</span> ${t.duration} <span class="duration-sep">—</span> ${t.arrival_time}
+                            ${t.departure_time || '--:--'} <span class="duration-sep">—</span> ${t.duration || '--'} <span class="duration-sep">—</span> ${t.arrival_time || '--:--'}
                         </div>
                     </div>
                     <div class="m-train-middle-row">
@@ -360,77 +764,40 @@
                 </div>
             `;
         }).join("");
-    }
 
-    function renderFallbackReferenceCards() {
-        const container = $("m-results-cards");
-        if (!container) return;
-
-        container.innerHTML = `
-            <div class="m-train-card" onclick="openTrainMobileDetails('12496')">
-                <div class="m-train-card-header">
-                    <span class="m-train-number-badge badge-gray">12496</span>
-                    <div class="m-train-timing-line">2:55 AM <span class="duration-sep">—</span> 20hr <span class="duration-sep">—</span> 10:55 PM</div>
-                </div>
-                <div class="m-train-middle-row">
-                    <span class="m-train-name-bold">Pratap SF Express</span>
-                    <span class="m-days-group">S M T W T <span class="day-active">F</span> S</span>
-                </div>
-                <div class="m-train-status-line status-not-running">Not running today</div>
-            </div>
-
-            <div class="m-train-card" onclick="openTrainMobileDetails('12987')">
-                <div class="m-train-card-header">
-                    <span class="m-train-number-badge badge-blue">12987</span>
-                    <div class="m-train-timing-line">3:12 AM <span class="duration-sep">—</span> 20hr 03min <span class="duration-sep">—</span> 11:15 PM</div>
-                </div>
-                <div class="m-train-middle-row">
-                    <span class="m-train-name-bold">Ajmer SF Express</span>
-                    <span class="m-runs-daily">Runs Daily</span>
-                </div>
-                <div class="m-train-status-line status-live">Left DHN at 03:15 AM</div>
-            </div>
-
-            <div class="m-train-card" onclick="openTrainMobileDetails('22307')">
-                <div class="m-train-card-header">
-                    <span class="m-train-number-badge badge-gray">22307</span>
-                    <div class="m-train-timing-line">3:25 AM <span class="duration-sep">—</span> 20hr 10min <span class="duration-sep">—</span> 11:35 PM</div>
-                </div>
-                <div class="m-train-middle-row">
-                    <span class="m-train-name-bold">Bikaner SF Express</span>
-                    <span class="m-days-group"><span class="day-active">S</span> M <span class="day-active">T</span> W <span class="day-active">T</span> F S</span>
-                </div>
-                <div class="m-train-status-line status-not-running">Not running today</div>
-            </div>
-
-            <div class="m-train-card" onclick="openTrainMobileDetails('12307')">
-                <div class="m-train-card-header">
-                    <span class="m-train-number-badge badge-blue">12307</span>
-                    <div class="m-train-timing-line">3:25 AM <span class="duration-sep">—</span> 20hr 10min <span class="duration-sep">—</span> 11:35 PM</div>
-                </div>
-                <div class="m-train-middle-row">
-                    <span class="m-train-name-bold">Jodhpur Superfast Express</span>
-                    <span class="m-days-group">S <span class="day-active">M</span> T <span class="day-active">W</span> <span class="day-active">T</span> F <span class="day-active">S</span></span>
-                </div>
-                <div class="m-train-status-line status-live">Left DHN at 03:32 AM</div>
-            </div>
-        `;
+        if (container) container.innerHTML = cardsHtml;
+        if (resultsContainer) resultsContainer.innerHTML = cardsHtml;
     }
 
     window.openTrainMobileDetails = function(trainNumber) {
         if (window.loadTrainDetails) {
             window.loadTrainDetails(trainNumber);
-            if (window.showToast) window.showToast(`🚆 Loading train details for ${trainNumber}`);
         }
+        showMobileToast(`🚆 Train ${trainNumber} selected. Opening schedule.`);
     };
+
+    function saveSearchToHistory(from, to) {
+        if (!from || !to) return;
+        const exists = mRecentSearches.some(s => s.from === from && s.to === to);
+        if (!exists) {
+            mRecentSearches.unshift({
+                trainNo: "CORRIDOR",
+                trainName: `${from} ➔ ${to}`,
+                from, to
+            });
+            if (mRecentSearches.length > 5) mRecentSearches.pop();
+            try { localStorage.setItem("railready_m_recent", JSON.stringify(mRecentSearches)); } catch (e) {}
+            renderSearchHistory();
+        }
+    }
 
     function renderSearchHistory() {
         const container = $("m-search-history-list");
         if (!container) return;
 
         container.innerHTML = mRecentSearches.map(item => `
-            <div class="m-history-item" onclick="handleHistoryItemClick('${item.from}', '${item.to}', '${item.trainNo}')">
-                <div class="m-history-train-info">${item.trainNo} &nbsp;${item.trainName}</div>
+            <div class="m-history-item" onclick="handleHistoryItemClick('${item.from}', '${item.to}')">
+                <div class="m-history-train-info">${item.trainName || item.trainNo}</div>
                 <div class="m-history-route">
                     <span>${item.from} - ${item.to}</span>
                     <span class="m-history-chevron">›</span>
@@ -439,15 +806,15 @@
         `).join("");
     }
 
-    window.handleHistoryItemClick = function(from, to, trainNo) {
+    window.handleHistoryItemClick = function(from, to) {
         if ($("m-input-from")) $("m-input-from").value = from;
         if ($("m-input-to")) $("m-input-to").value = to;
-        $("m-badge-from").textContent = from;
-        $("m-badge-to").textContent = to;
-        executeSearchBetweenStations(from, to);
+        if ($("m-badge-from")) $("m-badge-from").textContent = from;
+        if ($("m-badge-to")) $("m-badge-to").textContent = to;
+        executeMobileTrainSearch();
     };
 
-    // ================= VIEW 2: TATKAL COUNTDOWN & PREPARATION =================
+    // ================= 5. TATKAL PREPARATION VIEW =================
     function setupMobileTatkal() {
         const tktInputFrom = $("m-tatkal-from");
         const tktInputTo = $("m-tatkal-to");
@@ -479,7 +846,7 @@
             }
         });
 
-        // Date Picker
+        // Date picker
         const dateTrigger = $("m-tatkal-date-trigger");
         const hiddenDatePicker = $("m-tatkal-hidden-date");
         const dateDisplay = $("m-tatkal-date-display");
@@ -499,244 +866,95 @@
                 const d = new Date(hiddenDatePicker.value);
                 const options = { day: 'numeric', month: 'long', weekday: 'long' };
                 if (dateDisplay) dateDisplay.textContent = d.toLocaleDateString('en-GB', options);
-                refreshMobileCountdown();
             }
         });
 
-        // Quota Selector
+        // Quota selector
         $("m-tatkal-quota-btn")?.addEventListener("click", () => {
             selectedQuotaIdx = (selectedQuotaIdx + 1) % quotaList.length;
             const q = quotaList[selectedQuotaIdx];
             if ($("m-tatkal-quota-code")) $("m-tatkal-quota-code").textContent = q.code;
             if ($("m-tatkal-quota-name")) $("m-tatkal-quota-name").textContent = q.name;
-            if (window.showToast) window.showToast(`Quota selected: ${q.name} (${q.code})`);
-            refreshMobileCountdown();
+            showMobileToast(`Quota selected: ${q.name} (${q.code})`);
         });
 
-        // Prepare Tatkal Journey CTA
-        $("m-btn-prepare-tatkal")?.addEventListener("click", () => {
-            if (window.showToast) window.showToast("⚡ Journey configured! Opening countdown active.");
-            setMobileView("tatkal");
-        });
-
-        $("m-btn-open-irctc-prep")?.addEventListener("click", () => {
-            if (window.openIrctcModal) window.openIrctcModal();
-        });
-    }
-
-    async function refreshMobileCountdown() {
-        try {
-            const res = await fetch("/api/journey/latest");
-            const data = await res.json();
-            const cd = data?.countdown;
-
-            if (cd) {
-                if ($("m-cd-days")) $("m-cd-days").textContent = String(cd.days).padStart(2, "0");
-                if ($("m-cd-hours")) $("m-cd-hours").textContent = String(cd.hours).padStart(2, "0");
-                if ($("m-cd-mins")) $("m-cd-mins").textContent = String(cd.minutes).padStart(2, "0");
-                if ($("m-cd-secs")) $("m-cd-secs").textContent = String(cd.seconds).padStart(2, "0");
-                if ($("m-cd-msg")) $("m-cd-msg").textContent = cd.message;
-            } else {
-                // Tomorrow 10 AM default calculation
-                const now = new Date();
-                const target = new Date();
-                target.setHours(10, 0, 0, 0);
-                if (now.getHours() >= 10) target.setDate(target.getDate() + 1);
-
-                const diff = Math.max(0, Math.floor((target - now) / 1000));
-                const h = Math.floor(diff / 3600);
-                const m = Math.floor((diff % 3600) / 60);
-                const s = diff % 60;
-
-                if ($("m-cd-days")) $("m-cd-days").textContent = "00";
-                if ($("m-cd-hours")) $("m-cd-hours").textContent = String(h).padStart(2, "0");
-                if ($("m-cd-mins")) $("m-cd-mins").textContent = String(m).padStart(2, "0");
-                if ($("m-cd-secs")) $("m-cd-secs").textContent = String(s).padStart(2, "0");
-                if ($("m-cd-msg")) $("m-cd-msg").textContent = "AC Tatkal opens at 10:00 AM IST. Non-AC Tatkal opens at 11:00 AM IST.";
-            }
-        } catch (e) {}
-    }
-
-    async function refreshMobileChecklist() {
-        const container = $("m-checklist-container");
-        if (!container) return;
-
-        try {
-            const res = await fetch("/api/checklist");
-            const items = await res.json();
-            container.innerHTML = items.map(item => `
-                <div class="m-check-row ${item.checked ? 'checked' : ''}" onclick="toggleMobileChecklistItem('${item.item_key}', ${!item.checked})">
-                    <div class="m-checkbox-custom">${item.checked ? '✓' : ''}</div>
-                    <span class="m-check-text">${escapeHtml(item.item_text)}</span>
-                </div>
-            `).join("");
-        } catch (e) {}
-    }
-
-    window.toggleMobileChecklistItem = async function(key, checked) {
-        try {
-            await fetch(`/api/checklist/${key}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ checked })
-            });
-            refreshMobileChecklist();
-            if (window.loadChecklist) window.loadChecklist();
-        } catch (e) {}
-    };
-
-    // ================= VIEW 3: PASSENGERS & ALL DETAILS TEXT AREA =================
-    function setupMobilePassengers() {
-        // Format pills
-        $$(".m-fmt-pill").forEach(pill => {
-            pill.addEventListener("click", () => {
-                $$(".m-fmt-pill").forEach(p => p.classList.remove("active"));
-                pill.classList.add("active");
-                mTextareaFormat = pill.getAttribute("data-fmt") || "full";
-                updateMobileTextarea();
-            });
-        });
-
-        $("m-btn-copy-textarea")?.addEventListener("click", copyMobilePassengerTextarea);
-        $("m-btn-select-all-textarea")?.addEventListener("click", () => {
-            const ta = $("m-passenger-textarea");
-            if (ta) { ta.focus(); ta.select(); }
-        });
-
-        $("m-passenger-textarea")?.addEventListener("click", function() {
-            this.select();
-        });
-
-        // Quick add passenger form
-        $("m-form-add-passenger")?.addEventListener("submit", async e => {
-            e.preventDefault();
-            const name = $("m-input-pax-name")?.value.trim();
-            const age = parseInt($("m-input-pax-age")?.value);
-            const gender = $("m-select-pax-gender")?.value || "MALE";
-            const berth = $("m-select-pax-berth")?.value || "NO_PREFERENCE";
-            const meal = $("m-select-pax-meal")?.value || "VEG";
-            const senior = $("m-check-pax-senior")?.checked || false;
-
-            if (!name || isNaN(age)) {
-                if (window.showToast) window.showToast("⚠️ Please enter passenger name and age.");
-                return;
-            }
+        // Save Journey & Set Countdown
+        $("m-btn-prepare-tatkal")?.addEventListener("click", async () => {
+            const from = $("m-tatkal-from")?.value.trim() || "JP";
+            const to = $("m-tatkal-to")?.value.trim() || "PUNE";
+            const dateVal = hiddenDatePicker?.value || new Date().toISOString().split("T")[0];
+            const q = quotaList[selectedQuotaIdx];
 
             try {
-                const res = await fetch("/api/passengers", {
+                const res = await fetch("/api/journey", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        name, age, gender,
-                        berth_preference: berth,
-                        meal_preference: meal,
-                        senior_citizen_opt: senior
+                        from_station: extractCode(from),
+                        to_station: extractCode(to),
+                        journey_date: dateVal,
+                        preferred_train: `${extractCode(from)} - ${extractCode(to)} Rajdhani`,
+                        preferred_class: "3A",
+                        tatkal_type: q.code === "GN" ? "GENERAL" : "AC"
                     })
                 });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || "Failed to add passenger");
+                if (res.ok) {
+                    showMobileToast("⚡ Journey saved! Tatkal countdown active.");
+                    await refreshMobileJourneyAndCountdown();
+                    setMobileView("dashboard");
                 }
-                $("m-form-add-passenger").reset();
-                refreshMobilePassengers();
-                if (window.loadPassengers) window.loadPassengers();
-                if (window.showToast) window.showToast(`✅ Added passenger ${name}`);
-            } catch (err) {
-                if (window.showToast) window.showToast(`⚠️ ${err.message}`);
+            } catch (e) {
+                showMobileToast("⚡ Journey updated locally.");
             }
+        });
+
+        $("m-btn-open-irctc-prep")?.addEventListener("click", () => {
+            const modal = $("modal-irctc-guide");
+            if (modal) modal.classList.add("active");
         });
     }
 
-    async function refreshMobilePassengers() {
-        const container = $("m-passengers-list");
-        const countBadge = $("m-pax-count-badge");
-        if (!container) return;
+    // ================= 6. REMINDERS & ALERTS VIEW =================
+    function setupMobileAlerts() {
+        $("m-btn-test-chime")?.addEventListener("click", () => {
+            playMobileAlertChime();
+            showMobileToast("🔔 Test chime played!");
+        });
 
+        $("m-btn-test-notification")?.addEventListener("click", () => {
+            triggerMobileNotification("RailReady Alert", "Tatkal booking alert test.");
+            showMobileToast("🔔 Notification triggered!");
+        });
+    }
+
+    function playMobileAlertChime() {
         try {
-            const res = await fetch("/api/passengers");
-            const passengers = await res.json();
-
-            if (countBadge) countBadge.textContent = `${passengers.length}/4 Prepared`;
-
-            if (!passengers.length) {
-                container.innerHTML = `<div style="text-align: center; color: var(--m-text-dim); padding: 20px;">No passengers prepared yet. Add up to 4 for Tatkal.</div>`;
-            } else {
-                container.innerHTML = passengers.map((p, idx) => `
-                    <div class="m-passenger-card">
-                        <div class="m-pax-top">
-                            <span class="m-pax-name">${idx + 1}. ${escapeHtml(p.name)}</span>
-                            <span class="m-pax-meta">${p.age} yrs • ${p.gender}</span>
-                        </div>
-                        <div class="m-pax-badges-row">
-                            <span class="m-pax-badge">🛏️ ${p.berth_preference.replace("_", " ")}</span>
-                            <span class="m-pax-badge">🥗 ${p.meal_preference}</span>
-                            ${p.senior_citizen_opt ? '<span class="m-pax-badge" style="color: #fef08a;">👴 Senior</span>' : ''}
-                        </div>
-                        <div class="m-pax-actions">
-                            <button class="m-btn-mini" onclick="copyValueToClipboard('${escapeHtml(p.name)}', 'Passenger Name')">📋 Name</button>
-                            <button class="m-btn-mini" onclick="copyValueToClipboard('${p.age}', 'Age')">📋 Age</button>
-                            <button class="m-btn-mini" onclick="deleteMobilePassenger(${p.id})">🗑️</button>
-                        </div>
-                    </div>
-                `).join("");
-            }
-
-            updateMobileTextarea();
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.4);
         } catch (e) {}
     }
 
-    async function updateMobileTextarea() {
-        const textarea = $("m-passenger-textarea");
-        if (!textarea) return;
-
-        try {
-            const res = await fetch("/api/clipboard/passengers");
-            const data = await res.json();
-            if (mTextareaFormat === "row") {
-                textarea.value = data.row_format || "";
-            } else if (mTextareaFormat === "irctc") {
-                textarea.value = data.irctc_format || "";
-            } else {
-                textarea.value = data.formatted_summary || "";
-            }
-        } catch (e) {}
-    }
-
-    async function copyMobilePassengerTextarea() {
-        const textarea = $("m-passenger-textarea");
-        if (!textarea || !textarea.value.trim()) {
-            if (window.showToast) window.showToast("⚠️ No passenger details to copy.");
-            return;
-        }
-
-        try {
-            await navigator.clipboard.writeText(textarea.value);
-            if (window.showToast) window.showToast("📋 All passenger details copied to clipboard!");
-        } catch (e) {
-            textarea.focus();
-            textarea.select();
-            document.execCommand("copy");
-            if (window.showToast) window.showToast("📋 Copied via fallback!");
+    function triggerMobileNotification(title, message) {
+        if (!("Notification" in window)) return;
+        if (Notification.permission === "granted") {
+            new Notification(title, { body: message });
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(p => {
+                if (p === "granted") new Notification(title, { body: message });
+            });
         }
     }
 
-    window.copyValueToClipboard = async function(val, label) {
-        try {
-            await navigator.clipboard.writeText(val);
-            if (window.showToast) window.showToast(`📋 Copied ${label}: ${val}`);
-        } catch (e) {}
-    };
-
-    window.deleteMobilePassenger = async function(id) {
-        try {
-            await fetch(`/api/passengers/${id}`, { method: "DELETE" });
-            refreshMobilePassengers();
-            if (window.loadPassengers) window.loadPassengers();
-            if (window.showToast) window.showToast("🗑️ Passenger removed.");
-        } catch (e) {}
-    };
-
-    // ================= VIEW 4: SPLIT ROUTES & ALTERNATIVES =================
+    // ================= 7. SPLIT ROUTES & ALTERNATIVES =================
     function setupMobileAlternates() {
         $("m-btn-find-alternates")?.addEventListener("click", () => {
             loadMobileSplitRoutes();
