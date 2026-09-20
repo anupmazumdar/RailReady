@@ -82,6 +82,18 @@ function setupEventListeners() {
         copyToClipboard("https://www.irctc.co.in/");
         showToast("🌐 IRCTC URL copied to clipboard!");
     });
+
+    // Alternate Routes Search
+    const findRoutesBtn = document.getElementById("btn-find-routes");
+    if (findRoutesBtn) {
+        findRoutesBtn.addEventListener("click", handleFindRoutes);
+    }
+
+    // Live Train Status Guide
+    const queryLiveStatusBtn = document.getElementById("btn-query-live-status");
+    if (queryLiveStatusBtn) {
+        queryLiveStatusBtn.addEventListener("click", handleLiveStatusQuery);
+    }
 }
 
 // Fetch System Status & IST Clock
@@ -547,3 +559,156 @@ function escapeJs(str) {
     if (!str) return "";
     return str.replace(/'/g, "\\'");
 }
+
+// Alternate Route & Split Journey Finder
+async function handleFindRoutes() {
+    const srcInput = document.getElementById("route-from-station").value.trim();
+    const dstInput = document.getElementById("route-to-station").value.trim();
+
+    if (!srcInput || !dstInput) {
+        showToast("⚠️ Please specify both Source and Destination stations.");
+        return;
+    }
+
+    showToast("🔍 Searching direct & connecting train alternatives...");
+    const container = document.getElementById("route-results-container");
+    const directList = document.getElementById("direct-trains-list");
+    const splitList = document.getElementById("split-routes-list");
+    const directCount = document.getElementById("direct-trains-count");
+    const splitCount = document.getElementById("split-routes-count");
+
+    try {
+        const [directRes, splitRes] = await Promise.all([
+            fetch(`/api/trains/direct?from_station=${encodeURIComponent(srcInput)}&to_station=${encodeURIComponent(dstInput)}`),
+            fetch(`/api/trains/alternatives?from_station=${encodeURIComponent(srcInput)}&to_station=${encodeURIComponent(dstInput)}`)
+        ]);
+
+        const directData = await directRes.json();
+        const splitData = await splitRes.json();
+
+        container.style.display = "block";
+        directCount.textContent = directData.count || 0;
+        splitCount.textContent = splitData.alternatives_count || 0;
+
+        // Render Direct Trains
+        if (!directData.trains || directData.trains.length === 0) {
+            directList.innerHTML = `<div style="color: var(--text-dim); font-size: 0.88rem; padding: 8px;">No direct trains found in offline dataset for this route. Check connecting routes below!</div>`;
+        } else {
+            directList.innerHTML = directData.trains.map(t => `
+                <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); padding: 12px 16px; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span class="train-tag">${t.train_number}</span> - <strong>${escapeHtml(t.train_name)}</strong>
+                        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
+                            ${t.from_station} (${t.departure_time}) ➔ ${t.to_station} (${t.arrival_time}) • Duration: <strong>${t.duration}</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.78rem; background: rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 4px 8px; border-radius: 4px;">
+                            ${t.classes.join(", ")}
+                        </span>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        // Render Split Route Alternatives
+        if (!splitData.alternatives || splitData.alternatives.length === 0) {
+            splitList.innerHTML = `<div style="color: var(--text-dim); font-size: 0.88rem; padding: 8px;">No multi-leg alternatives found within comfortable layover limits.</div>`;
+        } else {
+            splitList.innerHTML = splitData.alternatives.map((opt, idx) => `
+                <div class="split-route-card">
+                    <div class="split-route-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 700; color: #f8fafc;">Option ${idx + 1}: Via</span>
+                            <span class="junction-badge">📍 ${opt.junction_name} (${opt.junction_code})</span>
+                        </div>
+                        <div style="font-size: 0.85rem; color: #a7f3d0; font-weight: 600;">
+                            Total: ${opt.total_duration}
+                        </div>
+                    </div>
+
+                    <div class="timeline-container">
+                        <!-- Leg 1 -->
+                        <div class="timeline-leg">
+                            <span class="train-tag">${opt.leg1.train_number}</span>
+                            <div>
+                                <div style="font-size: 0.88rem; font-weight: 600;">${escapeHtml(opt.leg1.train_name)}</div>
+                                <div style="font-size: 0.78rem; color: var(--text-muted);">
+                                    ${opt.leg1.from} (${opt.leg1.departure}) ➔ ${opt.leg1.to} (${opt.leg1.arrival})
+                                </div>
+                            </div>
+                            <span style="font-size: 0.8rem; color: var(--text-dim);">${opt.leg1.duration}</span>
+                        </div>
+
+                        <!-- Layover Buffer -->
+                        <div class="layover-divider">
+                            <span>⏳ Transfer Layover at ${opt.junction_code}: ${opt.layover_time}</span>
+                            ${opt.connecting_pnr_eligible ? '<span style="color: #6ee7b7;">✓ Connecting PNR Protected</span>' : ''}
+                        </div>
+
+                        <!-- Leg 2 -->
+                        <div class="timeline-leg">
+                            <span class="train-tag">${opt.leg2.train_number}</span>
+                            <div>
+                                <div style="font-size: 0.88rem; font-weight: 600;">${escapeHtml(opt.leg2.train_name)}</div>
+                                <div style="font-size: 0.78rem; color: var(--text-muted);">
+                                    ${opt.leg2.from} (${opt.leg2.departure}) ➔ ${opt.leg2.to} (${opt.leg2.arrival})
+                                </div>
+                            </div>
+                            <span style="font-size: 0.8rem; color: var(--text-dim);">${opt.leg2.duration}</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 10px; font-size: 0.78rem; color: #94a3b8; font-style: italic;">
+                        💡 ${escapeHtml(opt.booking_tip)}
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        showToast("✅ Found direct & alternative split routes!");
+    } catch (err) {
+        showToast("⚠️ Error querying routes.");
+    }
+}
+
+// Live Status Query
+async function handleLiveStatusQuery() {
+    const trainInput = document.getElementById("live-train-input").value.trim();
+    if (!trainInput) {
+        showToast("⚠️ Please enter a train number.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/trains/live-status?train_number=${encodeURIComponent(trainInput)}`);
+        const data = await res.json();
+        const detailsContainer = document.getElementById("live-status-details");
+        detailsContainer.style.display = "block";
+
+        detailsContainer.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600; color: #fff;">Official Tracking for Train #${escapeHtml(trainInput)}:</span>
+                    <a href="${data.official_web_portal.direct_search_url}" target="_blank" class="btn btn-primary btn-sm" style="text-decoration: none;">
+                        🌐 Open in NTES Portal ↗
+                    </a>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 6px; font-size: 0.85rem;">
+                    <strong>Official SMS Enquiry:</strong>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                        <span style="font-family: var(--font-mono); color: #60a5fa;">${data.official_sms_service.syntax} to ${data.official_sms_service.number}</span>
+                        <button class="btn btn-secondary btn-sm" onclick="copyToClipboard('${escapeJs(data.official_sms_service.syntax)}')">Copy Text</button>
+                    </div>
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">
+                    ${escapeHtml(data.statutory_note)}
+                </p>
+            </div>
+        `;
+        showToast("🛰️ Official NTES tracking info retrieved!");
+    } catch (err) {
+        showToast("⚠️ Error fetching live status guide.");
+    }
+}
+

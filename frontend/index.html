@@ -258,6 +258,91 @@
             </div>
         </main>
 
+        <!-- Section: Alternate Routes, Split Journeys & Official NTES Live Tracking -->
+        <section class="glass-card" id="section-alternate-routes" style="margin-top: 24px;" aria-labelledby="alternate-routes-heading">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title" id="alternate-routes-heading">
+                        <span>🔀</span> Alternate Route Splitter & Live Status Explorer
+                    </h2>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">
+                        Find connecting trains through major transit junctions when direct trains are sold out. Official Indian Railways Connecting PNR compliant.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Query Controls -->
+            <div style="background: rgba(11, 15, 25, 0.4); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="route-from-station">Source Station</label>
+                        <input type="text" id="route-from-station" list="station-list" placeholder="e.g. NDLS">
+                    </div>
+                    <div class="form-group">
+                        <label for="route-to-station">Destination Station</label>
+                        <input type="text" id="route-to-station" list="station-list" placeholder="e.g. HWH">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; margin-top: 10px;">
+                    <button id="btn-find-routes" class="btn btn-primary">
+                        🔍 Find Direct & Split Route Alternatives
+                    </button>
+                </div>
+            </div>
+
+            <!-- Route Results Container -->
+            <div id="route-results-container" style="display: none;">
+                <!-- Direct Trains -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; color: #60a5fa; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <span>🚆</span> Scheduled Direct Trains (<span id="direct-trains-count">0</span>)
+                    </h3>
+                    <div id="direct-trains-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Split Alternatives -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="font-size: 1rem; color: #34d399; display: flex; align-items: center; gap: 8px;">
+                            <span>🔀</span> Connecting / Split Route Alternatives (<span id="split-routes-count">0</span>)
+                        </h3>
+                        <span class="pnr-shield-badge">🛡️ Connecting PNR 100% Delay Refund Eligible</span>
+                    </div>
+                    <div id="split-routes-list">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Official Live Tracking Guide Sub-Card -->
+            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: var(--radius-md); padding: 18px; margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 1rem; color: #93c5fd; display: flex; align-items: center; gap: 8px;">
+                        <span>🛰️</span> Official Live Train Status & GPS Tracking (NTES)
+                    </h3>
+                    <span style="font-size: 0.75rem; color: var(--text-dim);">CRIS Real-Time Information System</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <input type="text" id="live-train-input" placeholder="Enter 5-digit Train Number (e.g. 12302)">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-query-live-status" class="btn btn-secondary btn-block">
+                            Track via Official NTES
+                        </button>
+                    </div>
+                </div>
+
+                <div id="live-status-details" style="display: none; margin-top: 14px; background: rgba(11, 15, 25, 0.6); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                    <!-- Dynamically filled -->
+                </div>
+            </div>
+        </section>
+
+
         <!-- Manual IRCTC Modal -->
         <div class="modal-overlay" id="modal-irctc-guide" aria-modal="true" role="dialog" aria-labelledby="modal-title">
             <div class="modal-card">

@@ -19,6 +19,11 @@ from utils.clipboard import (
     generate_full_passenger_summary,
     generate_quick_row_format
 )
+from utils.route_split import (
+    find_direct_trains,
+    find_split_routes,
+    get_live_status_guide
+)
 from config.settings import MAX_PASSENGERS_TATKAL
 
 router = APIRouter(prefix="/api")
@@ -176,3 +181,52 @@ def reset_checklist():
     """Reset all checklist items to unchecked."""
     db.reset_checklist()
     return {"status": "reset"}
+
+
+@router.get("/trains/direct")
+def get_direct_trains(from_station: str, to_station: str):
+    """Find scheduled direct trains between two stations from offline dataset."""
+    trains = find_direct_trains(from_station, to_station)
+    return {
+        "from": from_station,
+        "to": to_station,
+        "count": len(trains),
+        "trains": trains
+    }
+
+
+@router.get("/trains/alternatives")
+def get_alternative_split_routes(
+    from_station: str,
+    to_station: str,
+    min_layover: float = 1.0,
+    max_layover: float = 8.0
+):
+    """
+    Find legal 2-leg split journey alternatives through intermediate transit junctions.
+    Includes connecting PNR layover validation and refund protection guidance.
+    """
+    options = find_split_routes(
+        from_station,
+        to_station,
+        min_layover_hours=min_layover,
+        max_layover_hours=max_layover
+    )
+    return {
+        "from": from_station,
+        "to": to_station,
+        "alternatives_count": len(options),
+        "alternatives": options,
+        "connecting_pnr_advisory": (
+            "Indian Railways Connecting PNR Rule: Link both bookings on IRCTC by selecting "
+            "'Connecting Journey Booking' and entering PNR 1. If Train 1 is delayed causing a missed connection, "
+            "you receive a 100% full refund on Train 2."
+        )
+    }
+
+
+@router.get("/trains/live-status")
+def get_train_live_status_guide(train_number: Optional[str] = None):
+    """Provides verified official NTES live tracking methods and 139 SMS guide."""
+    return get_live_status_guide(train_number)
+
