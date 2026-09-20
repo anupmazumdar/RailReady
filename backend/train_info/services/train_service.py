@@ -89,5 +89,39 @@ class TrainService:
             cache_service.set(cache_key, status, CACHE_TTL_STATUS_SECONDS)
         return status
 
+    def get_pnr_status(self, pnr: str) -> Optional[Any]:
+        clean_pnr = sanitize_input_text(pnr).strip()
+        if len(clean_pnr) != 10 or not clean_pnr.isdigit():
+            return None
+        cache_key = f"pnr:{clean_pnr}"
+        cached, _ = cache_service.get(cache_key)
+        if cached:
+            return cached
+        res = self.provider.get_pnr_status(clean_pnr)
+        if res:
+            cache_service.set(cache_key, res, CACHE_TTL_STATUS_SECONDS)
+        return res
+
+    def get_coach_composition(self, train_number: str) -> Optional[Any]:
+        clean_no = sanitize_input_text(train_number).strip()
+        cache_key = f"coach:{clean_no}"
+        cached, _ = cache_service.get(cache_key)
+        if cached:
+            return cached
+        res = self.provider.get_coach_composition(clean_no)
+        if res:
+            cache_service.set(cache_key, res, CACHE_TTL_ROUTE_SECONDS)
+        return res
+
+    def search_stations(self, query: Optional[str] = None, limit: int = 20) -> List[Any]:
+        from storage.stations_data import search_stations
+        clean_q = sanitize_input_text(query) if query else None
+        return search_stations(clean_q, limit=limit)
+
+    def get_station(self, code: str) -> Optional[Any]:
+        from storage.stations_data import get_station_by_code
+        clean_code = sanitize_input_text(code).strip().upper()
+        return get_station_by_code(clean_code)
+
 
 train_service = TrainService()

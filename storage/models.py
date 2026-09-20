@@ -86,3 +86,84 @@ class JourneyResponse(JourneyBase):
 class ChecklistUpdate(BaseModel):
     item_key: str
     checked: bool
+
+
+class SearchHistoryCreate(BaseModel):
+    train_number: Optional[str] = None
+    train_name: Optional[str] = None
+    from_station: str
+    to_station: str
+    journey_date: Optional[str] = None
+
+
+class SearchHistoryItem(SearchHistoryCreate):
+    id: int
+    searched_at: str
+
+
+class AlertCreate(BaseModel):
+    alert_type: str = Field(..., description="DEPARTURE, STATUS, DELAY, PLATFORM, JOURNEY, PNR_REFRESH")
+    train_number: Optional[str] = None
+    train_name: Optional[str] = None
+    title: str
+    message: str
+    trigger_time: Optional[str] = None
+    enabled: bool = True
+
+
+class AlertItem(AlertCreate):
+    id: int
+    created_at: str
+
+
+class StationInfo(BaseModel):
+    code: str
+    name: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    is_popular: bool = False
+
+
+class PNRPassenger(BaseModel):
+    number: int
+    booking_status: str
+    current_status: str
+    coach: str
+    berth: int
+    berth_type: str
+
+
+class PNRResponse(BaseModel):
+    pnr_number: str
+    train_number: str
+    train_name: str
+    journey_date: str
+    from_station: str
+    from_station_name: str
+    to_station: str
+    to_station_name: str
+    boarding_station: str
+    reservation_upto: str
+    booking_class: str
+    quota: str
+    chart_status: str
+    passengers: List[PNRPassenger]
+    is_mock: bool = True
+    notice: str = "Demo PNR Record (Offline Simulation). RailReady does not connect directly to PRS/IRCTC."
+
+
+class CoachInfo(BaseModel):
+    coach_code: str
+    coach_type: str
+    class_code: str
+    total_berths: int
+    berth_layout: str
+
+
+class CoachCompositionResponse(BaseModel):
+    train_number: str
+    train_name: str
+    total_coaches: int
+    coaches: List[CoachInfo]
+    rake_type: str = "ICF / LHB"
+

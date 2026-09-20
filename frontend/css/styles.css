@@ -1,8 +1,8 @@
-:root {
+:root, [data-theme="dark"] {
     --bg-primary: #0b0f19;
-    --bg-surface: rgba(18, 26, 43, 0.75);
-    --bg-card: rgba(26, 38, 63, 0.65);
-    --bg-card-hover: rgba(36, 52, 85, 0.8);
+    --bg-surface: rgba(18, 26, 43, 0.85);
+    --bg-card: rgba(26, 38, 63, 0.75);
+    --bg-card-hover: rgba(36, 52, 85, 0.85);
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-glow: rgba(59, 130, 246, 0.4);
     
@@ -30,6 +30,39 @@
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-display: 'Outfit', var(--font-sans);
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme="light"] {
+    --bg-primary: #f1f5f9;
+    --bg-surface: rgba(255, 255, 255, 0.95);
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-hover: rgba(241, 245, 249, 0.95);
+    --border-subtle: rgba(0, 0, 0, 0.1);
+    --border-glow: rgba(37, 99, 235, 0.3);
+    
+    --primary: #2563eb;
+    --primary-glow: rgba(37, 99, 235, 0.25);
+    --primary-hover: #1d4ed8;
+    
+    --accent: #059669;
+    --accent-glow: rgba(5, 150, 105, 0.25);
+    
+    --warning: #d97706;
+    --warning-glow: rgba(217, 119, 6, 0.25);
+    
+    --danger: #dc2626;
+    --danger-glow: rgba(220, 38, 38, 0.25);
+    
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+}
+
+[data-theme="light"] body {
+    background-color: var(--bg-primary);
+    background-image: 
+        radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(5, 150, 105, 0.06) 0%, transparent 45%);
 }
 
 * {
@@ -1263,6 +1296,357 @@ select:focus {
     color: var(--text-dim);
     margin-top: 8px;
     font-style: italic;
+}
+
+/* Freshness Indicator & Refresh Action */
+.freshness-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    color: #93c5fd;
+}
+
+.freshness-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399;
+    animation: pulse 1.8s infinite;
+}
+
+.btn-refresh-pill {
+    background: transparent;
+    border: none;
+    color: #60a5fa;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0 4px;
+    text-decoration: underline;
+    transition: color 0.15s;
+}
+
+.btn-refresh-pill:hover {
+    color: #93c5fd;
+}
+
+/* Station Autocomplete Dropdown */
+.station-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.station-autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius-md);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+    display: none;
+}
+
+.station-autocomplete-dropdown.active {
+    display: block;
+}
+
+.station-suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.15s;
+}
+
+.station-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.station-suggestion-item:hover, .station-suggestion-item.highlighted {
+    background: var(--bg-card-hover);
+}
+
+.suggestion-code-badge {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.suggestion-name-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.suggestion-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.suggestion-location {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+/* Station Swap Button */
+.station-swap-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: #34d399;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.station-swap-btn:hover {
+    transform: rotate(180deg) scale(1.08);
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+}
+
+/* Coach Composition Layout */
+.coach-rake-container {
+    overflow-x: auto;
+    padding: 16px 0;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.coach-rake-strip {
+    display: flex;
+    gap: 8px;
+    min-width: max-content;
+    align-items: stretch;
+    padding: 4px;
+}
+
+.coach-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    height: 76px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 6px 4px;
+    transition: all 0.2s;
+    cursor: default;
+    position: relative;
+}
+
+.coach-box.engine {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    color: #fff;
+    font-weight: 800;
+    border-color: #ef4444;
+}
+
+.coach-box.sl {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.coach-box.ac3 {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.coach-box.ac2 {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+}
+
+.coach-box.ac1 {
+    border-color: #ec4899;
+    background: rgba(236, 72, 153, 0.12);
+}
+
+.coach-box.pc {
+    border-color: #8b5cf6;
+    background: rgba(139, 92, 246, 0.12);
+}
+
+.coach-code-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-main);
+}
+
+.coach-class-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.coach-berths-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.coach-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.coach-detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+}
+
+/* PNR Screen Cards */
+.pnr-card-hero {
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.15), rgba(15, 23, 42, 0.85));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-top: 20px;
+}
+
+.pnr-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.pnr-passenger-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pnr-status-badge {
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.pnr-status-cnf {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.pnr-status-rac {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.pnr-status-wl {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+/* History Cards */
+.history-item-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    transition: transform 0.15s, border-color 0.15s;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.history-item-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.history-train-info strong {
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.history-route-label {
+    font-size: 0.85rem;
+    color: #93c5fd;
+    margin-top: 2px;
+}
+
+.history-time-label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+/* Tickets & Saved Bookings */
+.ticket-card-box {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ticket-card-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: #3b82f6;
+}
+
+/* Responsive clamp typography */
+h1.brand-title {
+    font-size: clamp(1.25rem, 3.5vw, 1.85rem);
+}
+
+.card-title {
+    font-size: clamp(1.05rem, 2.5vw, 1.35rem);
 }
 
 

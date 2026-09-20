@@ -6,7 +6,13 @@ from storage.models import (
     JourneyResponse,
     PassengerCreate,
     PassengerResponse,
-    ChecklistUpdate
+    ChecklistUpdate,
+    SearchHistoryCreate,
+    SearchHistoryItem,
+    AlertCreate,
+    AlertItem,
+    StationInfo,
+    PNRResponse
 )
 import storage.db as db
 from security.validator import inspect_for_credentials, sanitize_input_text
@@ -25,6 +31,7 @@ from utils.route_split import (
     find_split_routes,
     get_live_status_guide
 )
+from backend.train_info.services.train_service import train_service
 from config.settings import MAX_PASSENGERS_TATKAL
 
 router = APIRouter(prefix="/api")
@@ -232,4 +239,113 @@ def get_alternative_split_routes(
 def get_train_live_status_guide(train_number: Optional[str] = None):
     """Provides verified official NTES live tracking methods and 139 SMS guide."""
     return get_live_status_guide(train_number)
+
+
+# ================= STATIONS =================
+@router.get("/stations/search", response_model=List[StationInfo])
+def search_stations_endpoint(query: Optional[str] = None, limit: int = 20):
+    """Lookup stations by code, station name, or city with popularity ranking."""
+    return train_service.search_stations(query, limit=limit)
+
+
+@router.get("/stations/{code}", response_model=StationInfo)
+def get_station_endpoint(code: str):
+    """Retrieve station profile and metadata by code."""
+    res = train_service.get_station(code)
+    if not res:
+        raise HTTPException(status_code=404, detail=f"Station code '{code}' not found.")
+    return res
+
+
+# ================= PNR STATUS =================
+@router.get("/pnr/{pnr}", response_model=PNRResponse)
+def get_pnr_status_endpoint(pnr: str):
+    """
+    Retrieve passenger booking status, current status, coach/berth, and chart status.
+    Requires exactly 10 numeric digits.
+    """
+    clean_pnr = pnr.strip()
+    if len(clean_pnr) != 10 or not clean_pnr.isdigit():
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid PNR number. PNR must be exactly 10 numeric digits."
+        )
+    result = train_service.get_pnr_status(clean_pnr)
+    if not result:
+        raise HTTPException(status_code=404, detail=f"PNR status for '{clean_pnr}' is unavailable.")
+    return result
+
+
+# ================= SEARCH HISTORY =================
+@router.get("/history", response_model=List[SearchHistoryItem])
+def get_search_history_endpoint(limit: int = 30):
+    """Retrieve recent train and corridor search history."""
+    return db.get_search_history(limit=limit)
+
+
+@router.post("/history", response_model=SearchHistoryItem)
+def add_search_history_endpoint(item: SearchHistoryCreate):
+    """Record a train or corridor search."""
+    inspect_for_credentials(item.model_dump())
+    item.from_station = sanitize_input_text(item.from_station)
+    item.to_station = sanitize_input_text(item.to_station)
+    if item.train_number:
+        item.train_number = sanitize_input_text(item.train_number)
+    if item.train_name:
+        item.train_name = sanitize_input_text(item.train_name)
+    return db.add_search_history(item)
+
+
+@router.delete("/history/{item_id}")
+def delete_search_history_endpoint(item_id: int):
+    """Delete a specific search history entry."""
+    deleted = db.delete_search_history_item(item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Search history item not found.")
+    return {"status": "deleted", "id": item_id}
+
+
+@router.delete("/history")
+def clear_search_history_endpoint():
+    """Clear all search history records."""
+    db.clear_search_history()
+    return {"status": "cleared"}
+
+
+# ================= ALERTS =================
+@router.get("/alerts", response_model=List[AlertItem])
+def get_alerts_endpoint():
+    """List all scheduled railway journey and train alerts."""
+    return db.get_alerts()
+
+
+@router.post("/alerts", response_model=AlertItem)
+def create_alert_endpoint(alert: AlertCreate):
+    """Create a new journey, departure, delay, or PNR reminder alert."""
+    inspect_for_credentials(alert.model_dump())
+    alert.title = sanitize_input_text(alert.title)
+    alert.message = sanitize_input_text(alert.message)
+    if alert.train_number:
+        alert.train_number = sanitize_input_text(alert.train_number)
+    if alert.train_name:
+        alert.train_name = sanitize_input_text(alert.train_name)
+    return db.add_alert(alert)
+
+
+@router.delete("/alerts/{alert_id}")
+def delete_alert_endpoint(alert_id: int):
+    """Delete an alert by ID."""
+    deleted = db.delete_alert(alert_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Alert not found.")
+    return {"status": "deleted", "id": alert_id}
+
+
+@router.put("/alerts/{alert_id}/toggle", response_model=AlertItem)
+def toggle_alert_endpoint(alert_id: int, enabled: Optional[bool] = None):
+    """Toggle enabled status of an alert."""
+    updated = db.toggle_alert(alert_id, enabled)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Alert not found.")
+    return updated
 

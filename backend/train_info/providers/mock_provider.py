@@ -208,3 +208,138 @@ class MockTrainDataProvider(TrainDataProvider):
             timeline=timeline, stale_data=False,
             source_attribution="Verified reference simulation. Verify through official NTES (enquiry.indianrail.gov.in) / Helpline 139."
         )
+
+    def get_pnr_status(self, pnr: str) -> Optional[Any]:
+        """Deterministic high-fidelity offline simulated PNR response."""
+        from storage.models import PNRResponse, PNRPassenger
+        clean_pnr = pnr.strip()
+        if len(clean_pnr) != 10 or not clean_pnr.isdigit():
+            return None
+
+        # Deterministic generation from PNR digits
+        seed = sum(int(digit) * (idx + 7) for idx, digit in enumerate(clean_pnr))
+
+        train_pool = [
+            {"num": "12307", "name": "Jodhpur Superfast Express", "from": "DHN", "from_name": "Dhanbad Junction", "to": "JP", "to_name": "Jaipur Junction", "cls": "3A", "coach_prefix": "B"},
+            {"num": "12987", "name": "Ajmer SF Express", "from": "DHN", "from_name": "Dhanbad Junction", "to": "AII", "to_name": "Ajmer Junction", "cls": "SL", "coach_prefix": "S"},
+            {"num": "12952", "name": "Mumbai Tejas Rajdhani Express", "from": "NDLS", "from_name": "New Delhi", "to": "BCT", "to_name": "Mumbai Central", "cls": "2A", "coach_prefix": "A"},
+            {"num": "12302", "name": "Howrah Rajdhani Express", "from": "NDLS", "from_name": "New Delhi", "to": "HWH", "to_name": "Howrah Junction", "cls": "3A", "coach_prefix": "B"},
+            {"num": "12004", "name": "Lucknow Shatabdi Express", "from": "NDLS", "from_name": "New Delhi", "to": "LKO", "to_name": "Lucknow Charbagh", "cls": "CC", "coach_prefix": "C"}
+        ]
+        selected_train = train_pool[seed % len(train_pool)]
+
+        # Date calculation (today + 1..5 days)
+        now_ist = get_ist_now()
+        j_date = (now_ist + timedelta(days=(seed % 5) + 1)).strftime("%d-%b-%Y")
+
+        # Charting state
+        chart_status = "CHART PREPARED" if (seed % 3 == 0) else "CHART NOT PREPARED"
+
+        # Passenger counts (1 to 3 passengers)
+        p_count = (seed % 3) + 1
+        passengers = []
+        berth_types = ["Lower Berth (LB)", "Middle Berth (MB)", "Upper Berth (UB)", "Side Lower (SL)", "Side Upper (SU)"]
+
+        for i in range(1, p_count + 1):
+            p_seed = seed + i * 17
+            coach_num = (p_seed % 4) + 1
+            coach_code = f"{selected_train['coach_prefix']}{coach_num}"
+            berth_num = (p_seed % 64) + 1
+            b_type = berth_types[p_seed % len(berth_types)]
+
+            if seed % 7 == 0:
+                bk_status = f"WL {(p_seed % 15) + 5}"
+                curr_status = f"RAC {(p_seed % 5) + 1}"
+            elif seed % 7 == 1:
+                bk_status = f"RAC {(p_seed % 10) + 1}"
+                curr_status = "CNF"
+            elif seed % 7 == 2:
+                bk_status = f"WL {(p_seed % 30) + 10}"
+                curr_status = f"WL {(p_seed % 10) + 1}"
+            else:
+                bk_status = "CNF"
+                curr_status = "CNF"
+
+            passengers.append(PNRPassenger(
+                number=i,
+                booking_status=f"{bk_status}/{coach_code}/{berth_num}" if "CNF" in bk_status else bk_status,
+                current_status=f"{curr_status}/{coach_code}/{berth_num}" if "CNF" in curr_status else curr_status,
+                coach=coach_code if "CNF" in curr_status else "WL",
+                berth=berth_num if "CNF" in curr_status else 0,
+                berth_type=b_type if "CNF" in curr_status else "None"
+            ))
+
+        return PNRResponse(
+            pnr_number=clean_pnr,
+            train_number=selected_train["num"],
+            train_name=selected_train["name"],
+            journey_date=j_date,
+            from_station=selected_train["from"],
+            from_station_name=selected_train["from_name"],
+            to_station=selected_train["to"],
+            to_station_name=selected_train["to_name"],
+            boarding_station=f"{selected_train['from']} - {selected_train['from_name']}",
+            reservation_upto=f"{selected_train['to']} - {selected_train['to_name']}",
+            booking_class=selected_train["cls"],
+            quota="TQ (Tatkal)" if (seed % 4 == 0) else "GN (General)",
+            chart_status=chart_status,
+            passengers=passengers,
+            is_mock=True,
+            notice="Demo PNR Record (Offline Simulation). RailReady does not connect directly to PRS/IRCTC."
+        )
+
+    def get_coach_composition(self, train_number: str) -> Optional[Any]:
+        """Provides realistic rake and coach composition layout."""
+        from storage.models import CoachCompositionResponse, CoachInfo
+        clean_no = train_number.strip()
+        data = MOCK_TRAINS_DATA.get(clean_no)
+        train_name = data["train_name"] if data else f"Express Train {clean_no}"
+        t_type = data["train_type"] if data else "Superfast"
+
+        coaches = []
+        if "Rajdhani" in t_type:
+            rake_type = "LHB Tejas / Rajdhani Rake"
+            coaches.append(CoachInfo(coach_code="EOG", coach_type="End On Generation / Generator Car", class_code="EOG", total_berths=0, berth_layout="Power Car"))
+            coaches.append(CoachInfo(coach_code="H1", coach_type="AC First Class (1A)", class_code="1A", total_berths=24, berth_layout="Coupe & Cabin (1-24)"))
+            for i in range(1, 4):
+                coaches.append(CoachInfo(coach_code=f"A{i}", coach_type="AC 2-Tier (2A)", class_code="2A", total_berths=54, berth_layout="LB, UB, SL, SU (1-54)"))
+            coaches.append(CoachInfo(coach_code="PC", coach_type="Pantry Car", class_code="PC", total_berths=0, berth_layout="Kitchen & Dining Storage"))
+            for i in range(1, 9):
+                coaches.append(CoachInfo(coach_code=f"B{i}", coach_type="AC 3-Tier (3A)", class_code="3A", total_berths=72, berth_layout="LB, MB, UB, SL, SU (1-72)"))
+            coaches.append(CoachInfo(coach_code="EOG", coach_type="End On Generation / Luggage", class_code="EOG", total_berths=0, berth_layout="Power Car"))
+        elif "Shatabdi" in t_type:
+            rake_type = "LHB Shatabdi Day Express"
+            coaches.append(CoachInfo(coach_code="EOG", coach_type="End On Generation", class_code="EOG", total_berths=0, berth_layout="Power Car"))
+            coaches.append(CoachInfo(coach_code="E1", coach_type="Executive Chair Car (EC)", class_code="EC", total_berths=56, berth_layout="2x2 Reclining (1-56)"))
+            for i in range(1, 11):
+                coaches.append(CoachInfo(coach_code=f"C{i}", coach_type="AC Chair Car (CC)", class_code="CC", total_berths=78, berth_layout="3x2 Seating (1-78)"))
+            coaches.append(CoachInfo(coach_code="EOG", coach_type="End On Generation", class_code="EOG", total_berths=0, berth_layout="Power Car"))
+        elif "Passenger" in t_type or "MEMU" in t_type:
+            rake_type = "MEMU / Passenger Rake"
+            coaches.append(CoachInfo(coach_code="DMC", coach_type="Driving Motor Coach", class_code="GEN", total_berths=80, berth_layout="Unreserved High-Capacity (1-80)"))
+            for i in range(1, 7):
+                coaches.append(CoachInfo(coach_code=f"TC{i}", coach_type="Trailer Coach (General)", class_code="GEN", total_berths=100, berth_layout="Unreserved Commuter (1-100)"))
+            coaches.append(CoachInfo(coach_code="DMC", coach_type="Driving Motor Coach", class_code="GEN", total_berths=80, berth_layout="Unreserved High-Capacity (1-80)"))
+        else:
+            rake_type = "Standard 22-Coach LHB Express"
+            coaches.append(CoachInfo(coach_code="SLR", coach_type="Seating cum Luggage Rake", class_code="SLR", total_berths=30, berth_layout="Guard & Disabled Friendly (1-30)"))
+            coaches.append(CoachInfo(coach_code="GEN1", coach_type="General Unreserved", class_code="GEN", total_berths=90, berth_layout="Unreserved 2S (1-90)"))
+            coaches.append(CoachInfo(coach_code="GEN2", coach_type="General Unreserved", class_code="GEN", total_berths=90, berth_layout="Unreserved 2S (1-90)"))
+            for i in range(1, 7):
+                coaches.append(CoachInfo(coach_code=f"S{i}", coach_type="Sleeper Class (SL)", class_code="SL", total_berths=80, berth_layout="LB, MB, UB, SL, SU (1-80)"))
+            coaches.append(CoachInfo(coach_code="PC", coach_type="Pantry Car", class_code="PC", total_berths=0, berth_layout="Hot Food & Catering"))
+            for i in range(1, 7):
+                coaches.append(CoachInfo(coach_code=f"B{i}", coach_type="AC 3-Tier (3A)", class_code="3A", total_berths=72, berth_layout="LB, MB, UB, SL, SU (1-72)"))
+            coaches.append(CoachInfo(coach_code="A1", coach_type="AC 2-Tier (2A)", class_code="2A", total_berths=54, berth_layout="LB, UB, SL, SU (1-54)"))
+            coaches.append(CoachInfo(coach_code="A2", coach_type="AC 2-Tier (2A)", class_code="2A", total_berths=54, berth_layout="LB, UB, SL, SU (1-54)"))
+            coaches.append(CoachInfo(coach_code="H1", coach_type="AC First Class (1A)", class_code="1A", total_berths=24, berth_layout="Coupe & Cabin (1-24)"))
+            coaches.append(CoachInfo(coach_code="GEN3", coach_type="General Unreserved", class_code="GEN", total_berths=90, berth_layout="Unreserved 2S (1-90)"))
+            coaches.append(CoachInfo(coach_code="SLR", coach_type="Seating cum Luggage Rake", class_code="SLR", total_berths=30, berth_layout="Guard & Luggage"))
+
+        return CoachCompositionResponse(
+            train_number=clean_no,
+            train_name=train_name,
+            total_coaches=len(coaches),
+            coaches=coaches,
+            rake_type=rake_type
+        )

@@ -15,12 +15,17 @@
 |  | - View 3: Train Details             |             |  - /api/passengers                     |  |
 |  | - View 4: Running Status            |             |  - /api/checklist                      |  |
 |  | - View 5: Route Timeline            |             |  - /api/status                         |  |
-|  | - View 6: Journey Planner           |             |                                        |  |
+|  | - View 6: Coach Layout              |             |  - /api/stations/search                |  |
+|  | - View 7: PNR Status Enquiry        |             |  - /api/pnr/{pnr}                      |  |
+|  | - View 8: Tickets & Saved Bookings  |             |  - /api/history                        |  |
+|  | - View 9: Search History            |             |  - /api/alerts                         |  |
+|  | - View 10: Journey Planner          |             |                                        |  |
 |  |   (Primary, Alt 1, Alt 2)           |             |  TRAIN INFO & STATUS MODULE:           |  |
-|  | - View 7: Tatkal Preparation        |             |  - /api/trains/search                  |  |
-|  | - View 8: Passenger Details         |             |  - /api/trains/{train_number}          |  |
-|  | - View 9: Notifications             |             |  - /api/trains/{train_number}/route    |  |
-|  | - View 10: Settings                 |             |  - /api/trains/{train_number}/status   |  |
+|  | - View 11: Tatkal Preparation       |             |  - /api/trains/search                  |  |
+|  | - View 12: Passenger Details        |             |  - /api/trains/{train_number}          |  |
+|  | - View 13: Split Routes             |             |  - /api/trains/{train_number}/route    |  |
+|  | - View 14: Notifications & Alerts   |             |  - /api/trains/{train_number}/status   |  |
+|  | - View 15: Settings & Theme         |             |  - /api/trains/{train_number}/coaches  |  |
 |  +-------------------------------------+             +-------------------+--------------------+  |
 |                                                                          |                       |
 |                                                                          v                       |
@@ -45,6 +50,8 @@
 |  | - Journey Plans (Primary + Alt 1/2) |
 |  | - Prepared Passengers (Max 4)       |
 |  | - Checklist Progress (8 Points)     |
+|  | - Search History (Recent Queries)   |
+|  | - Alerts & Reminders                |
 |  +-------------------------------------+
 +--------------------------------------------------------------------------------------------------+
                                                 ||

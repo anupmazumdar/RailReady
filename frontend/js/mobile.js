@@ -53,6 +53,11 @@
         setupMobilePassengers();
         setupMobileAlerts();
         setupMobileAlternates();
+        setupMobilePNR();
+        setupMobileTickets();
+        setupMobileRoute();
+        setupMobileCoach();
+        setupMobileFullHistory();
         setupMobileDrawer();
         setupDesktopToggle();
         renderSearchHistory();
@@ -116,7 +121,6 @@
             backBtn?.classList.add("hidden");
             if (headerTitle) headerTitle.textContent = "Tatkal Preparation";
             micBtn?.classList.add("hidden");
-            $("m-tab-tatkal")?.classList.add("active");
             refreshMobileJourneyAndCountdown();
             refreshMobileChecklist();
         } else if (viewName === "passengers") {
@@ -124,7 +128,6 @@
             backBtn?.classList.add("hidden");
             if (headerTitle) headerTitle.textContent = "Prepared Passengers";
             micBtn?.classList.add("hidden");
-            $("m-tab-passengers")?.classList.add("active");
             refreshMobilePassengers();
         } else if (viewName === "alerts") {
             drawerBtn?.classList.remove("hidden");
@@ -132,12 +135,42 @@
             if (headerTitle) headerTitle.textContent = "Reminders & Alerts";
             micBtn?.classList.add("hidden");
             $("m-tab-alerts")?.classList.add("active");
+            if (window.loadAlerts) window.loadAlerts();
         } else if (viewName === "alternates") {
             drawerBtn?.classList.remove("hidden");
             backBtn?.classList.add("hidden");
             if (headerTitle) headerTitle.textContent = "Split Routes & Alternatives";
             micBtn?.classList.add("hidden");
             loadMobileSplitRoutes();
+        } else if (viewName === "pnr") {
+            drawerBtn?.classList.remove("hidden");
+            backBtn?.classList.add("hidden");
+            if (headerTitle) headerTitle.textContent = "PNR Status Enquiry";
+            micBtn?.classList.add("hidden");
+            $("m-tab-pnr")?.classList.add("active");
+        } else if (viewName === "tickets") {
+            drawerBtn?.classList.remove("hidden");
+            backBtn?.classList.add("hidden");
+            if (headerTitle) headerTitle.textContent = "Tickets & Saved Bookings";
+            micBtn?.classList.add("hidden");
+            $("m-tab-tickets")?.classList.add("active");
+            loadMobileSavedTickets();
+        } else if (viewName === "route") {
+            drawerBtn?.classList.add("hidden");
+            backBtn?.classList.remove("hidden");
+            if (headerTitle) headerTitle.textContent = "Live Status & Route";
+            micBtn?.classList.add("hidden");
+        } else if (viewName === "coach") {
+            drawerBtn?.classList.add("hidden");
+            backBtn?.classList.remove("hidden");
+            if (headerTitle) headerTitle.textContent = "Coach & Seat Layout";
+            micBtn?.classList.add("hidden");
+        } else if (viewName === "history") {
+            drawerBtn?.classList.remove("hidden");
+            backBtn?.classList.add("hidden");
+            if (headerTitle) headerTitle.textContent = "Recent Search History";
+            micBtn?.classList.add("hidden");
+            loadMobileFullHistory();
         }
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -145,7 +178,7 @@
 
     function setupMobileNavigation() {
         $("m-btn-back")?.addEventListener("click", () => {
-            if (mCurrentView === "results") {
+            if (mCurrentView === "results" || mCurrentView === "route" || mCurrentView === "coach") {
                 setMobileView("trains");
             } else {
                 setMobileView("dashboard");
@@ -165,6 +198,11 @@
                 const modal = $("modal-irctc-guide");
                 if (modal) modal.classList.add("active");
             }
+        });
+
+        $("m-btn-theme")?.addEventListener("click", () => {
+            const cur = document.documentElement.getAttribute("data-theme") || "dark";
+            if (window.applyTheme) window.applyTheme(cur === "dark" ? "light" : "dark");
         });
     }
 
@@ -196,10 +234,21 @@
 
         bindDrawerNav("drawer-nav-dashboard", "dashboard");
         bindDrawerNav("drawer-nav-trains", "trains");
+        bindDrawerNav("drawer-nav-pnr", "pnr");
+        bindDrawerNav("drawer-nav-tickets", "tickets");
+        bindDrawerNav("drawer-nav-route", "route");
+        bindDrawerNav("drawer-nav-coach", "coach");
+        bindDrawerNav("drawer-nav-history", "history");
+        bindDrawerNav("drawer-nav-alerts", "alerts");
         bindDrawerNav("drawer-nav-tatkal", "tatkal");
         bindDrawerNav("drawer-nav-passengers", "passengers");
-        bindDrawerNav("drawer-nav-alerts", "alerts");
         bindDrawerNav("drawer-nav-alternates", "alternates");
+
+        $("drawer-nav-theme-toggle")?.addEventListener("click", () => {
+            closeDrawer();
+            const cur = document.documentElement.getAttribute("data-theme") || "dark";
+            if (window.applyTheme) window.applyTheme(cur === "dark" ? "light" : "dark");
+        });
 
         $("drawer-update-timetable")?.addEventListener("click", () => {
             closeDrawer();
@@ -227,6 +276,7 @@
             showMobileToast("💻 Switched to Desktop Dashboard");
         });
     }
+
 
     // ================= DESKTOP TOGGLE =================
     function setupDesktopToggle() {
@@ -749,7 +799,7 @@
                 : `<div class="m-train-status-line status-live" style="color: #34d399;">Live: On Time</div>`;
 
             return `
-                <div class="m-train-card" onclick="openTrainMobileDetails('${t.train_number}')">
+                <div class="m-train-card">
                     <div class="m-train-card-header">
                         <span class="m-train-number-badge ${badgeClass}">${t.train_number}</span>
                         <div class="m-train-timing-line">
@@ -761,6 +811,11 @@
                         ${daysHtml}
                     </div>
                     ${statusHtml}
+                    <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                        <button type="button" class="m-btn-mini-primary" onclick="openMobileTrainRoute('${t.train_number}')">📍 Live Route</button>
+                        <button type="button" class="m-btn-mini" onclick="openMobileCoachLayout('${t.train_number}')">💺 Coach Layout</button>
+                        <button type="button" class="m-btn-mini" onclick="if(window.quickAssignTrain) window.quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code || ''}', '${t.dest_code || ''}', 'PRIMARY'); setMobileView('tatkal');">⚡ Use for Tatkal</button>
+                    </div>
                 </div>
             `;
         }).join("");
@@ -1008,4 +1063,353 @@
             container.innerHTML = `<div style="text-align: center; color: var(--m-text-dim); padding: 20px;">Unable to load split routes. Check station codes.</div>`;
         }
     }
+
+    // ================= 8. MOBILE PNR STATUS ENQUIRY =================
+    function setupMobilePNR() {
+        const pnrInput = $("m-pnr-input");
+        const btnCheck = $("m-btn-check-pnr");
+
+        btnCheck?.addEventListener("click", () => {
+            checkMobilePNR(pnrInput?.value);
+        });
+
+        pnrInput?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") checkMobilePNR(pnrInput?.value);
+        });
+    }
+
+    window.quickFillMobilePNR = function(pnr) {
+        const inp = $("m-pnr-input");
+        if (inp) inp.value = pnr;
+        checkMobilePNR(pnr);
+    };
+
+    async function checkMobilePNR(pnr) {
+        const cleanPnr = (pnr || $("m-pnr-input")?.value || "").trim().replace(/\D/g, "");
+        const container = $("m-pnr-result-cards");
+        const errBox = $("m-pnr-error");
+        if (!container) return;
+
+        if (errBox) errBox.style.display = "none";
+
+        if (cleanPnr.length !== 10) {
+            if (errBox) {
+                errBox.textContent = "⚠️ Please enter a valid 10-digit numeric PNR.";
+                errBox.style.display = "block";
+            }
+            showMobileToast("⚠️ PNR must be exactly 10 digits");
+            return;
+        }
+
+        container.innerHTML = `
+            <div class="m-card skeleton-loading" style="text-align: center; padding: 24px;">
+                <div style="color: var(--m-text-dim);">🔍 Querying PRS reservation records for PNR #${cleanPnr}...</div>
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/api/pnr/${cleanPnr}`);
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || "Unable to retrieve PNR record");
+            }
+            const data = await res.json();
+            const isPrepared = data.chart_prepared;
+
+            container.innerHTML = `
+                <div class="m-card">
+                    <div class="m-card-header-flex">
+                        <div>
+                            <span class="m-code-badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); font-size: 0.85rem; padding: 4px 8px;">PNR ${data.pnr}</span>
+                            <div style="font-weight: 700; color: #fff; font-size: 1.05rem; margin-top: 6px;">
+                                ${data.train_number} - ${escapeHtml(data.train_name)}
+                            </div>
+                        </div>
+                        <span class="${isPrepared ? 'm-badge-tag-green' : 'm-badge-tag-blue'}">
+                            ${isPrepared ? '✓ CHART PREPARED' : '⏳ CHART NOT PREPARED'}
+                        </span>
+                    </div>
+
+                    <div style="background: rgba(11, 15, 25, 0.6); padding: 10px 14px; border-radius: 8px; margin: 12px 0; border: 1px solid var(--m-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;">
+                        <div><strong>${escapeHtml(data.from_station)}</strong><div style="font-size: 0.74rem; color: var(--m-text-dim);">${data.journey_date}</div></div>
+                        <div style="color: var(--m-text-dim); font-size: 1.1rem;">➔</div>
+                        <div style="text-align: right;"><strong>${escapeHtml(data.to_station)}</strong><div style="font-size: 0.74rem; color: var(--m-text-dim);">Class: ${data.journey_class}</div></div>
+                    </div>
+
+                    <div style="font-size: 0.82rem; font-weight: 600; color: #93c5fd; margin-bottom: 8px;">PASSENGER STATUS LIST</div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${data.passengers.map(p => `
+                            <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 6px; border: 1px solid var(--m-border); display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong style="color: #fff; font-size: 0.88rem;">Passenger ${p.passenger_number}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--m-text-muted); margin-top: 2px;">
+                                        Coach: <strong style="color: #60a5fa;">${p.coach}</strong> • Berth: <strong style="color: #34d399;">${p.berth}</strong> (${p.berth_type || 'Berth'})
+                                    </div>
+                                </div>
+                                <span class="m-badge-tag-green" style="font-size: 0.78rem;">${p.current_status}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+
+                    <div style="font-size: 0.74rem; color: var(--m-text-dim); margin-top: 12px; font-style: italic;">
+                        * ${escapeHtml(data.disclaimer || 'Verified reference simulation.')}
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;">
+                        <button type="button" class="m-btn-mini-primary" style="flex: 1;" onclick="openMobileTrainRoute('${data.train_number}')">📍 Live Route</button>
+                        <button type="button" class="m-btn-mini" style="flex: 1;" onclick="openMobileCoachLayout('${data.train_number}')">💺 Coach Layout</button>
+                    </div>
+                </div>
+            `;
+        } catch (err) {
+            container.innerHTML = `
+                <div class="m-card" style="text-align: center; padding: 24px; border-color: rgba(239, 68, 68, 0.4);">
+                    <h4 style="color: #ef4444; font-size: 1rem; margin-bottom: 6px;">PNR Enquiry Failed</h4>
+                    <p style="color: var(--m-text-dim); font-size: 0.82rem; margin-bottom: 12px;">${escapeHtml(err.message)}</p>
+                    <button class="m-btn-mini" onclick="checkMobilePNR('${cleanPnr}')">🔄 Retry</button>
+                </div>
+            `;
+        }
+    }
+
+    // ================= 9. MOBILE ROUTE TIMELINE & RUNNING STATUS =================
+    let currentMobileTrainNum = "12307";
+
+    function setupMobileRoute() {
+        $("m-btn-refresh-route")?.addEventListener("click", () => {
+            if (currentMobileTrainNum) openMobileTrainRoute(currentMobileTrainNum);
+        });
+    }
+
+    window.openMobileTrainRoute = async function(trainNumber) {
+        currentMobileTrainNum = trainNumber;
+        setMobileView("route");
+
+        const card = $("m-route-status-card");
+        const timeline = $("m-route-timeline-nodes");
+
+        const titleEl = $("m-route-train-title");
+        const badgeEl = $("m-route-status-badge");
+        const locEl = $("m-route-curr-loc");
+        const delayEl = $("m-route-delay-str");
+        const freshEl = $("m-route-freshness");
+
+        if (titleEl) titleEl.textContent = `Train #${trainNumber}`;
+        if (freshEl) freshEl.textContent = "Updating status...";
+
+        try {
+            const res = await fetch(`/api/trains/${encodeURIComponent(trainNumber)}/status`);
+            if (!res.ok) throw new Error("Status failed");
+            const s = await res.json();
+            const delayed = s.delay_minutes > 0;
+
+            if (titleEl) titleEl.textContent = `${s.train_number} - ${s.train_name}`;
+            if (badgeEl) {
+                badgeEl.className = delayed ? "m-badge-tag-blue" : "m-badge-tag-green";
+                badgeEl.textContent = s.current_status;
+            }
+            if (locEl) locEl.textContent = `${s.current_station_name} (${s.current_station})`;
+            if (delayEl) {
+                delayEl.textContent = s.delay_status;
+                delayEl.style.color = delayed ? "#fcd34d" : "#34d399";
+            }
+            if (freshEl) freshEl.textContent = "Updated just now";
+
+            if (timeline && s.timeline) {
+                timeline.innerHTML = s.timeline.map(st => `
+                    <div class="timeline-station-node ${st.has_departed ? 'departed' : ''} ${st.station_code === s.current_station ? 'current-station' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <strong style="color: #fff; font-size: 0.9rem;">${st.station_code} - ${escapeHtml(st.station_name)}</strong>
+                                <div style="font-size: 0.74rem; color: #a7f3d0; margin-top: 2px;">
+                                    ${st.platform || 'PF 1'} ${st.has_departed ? '• Departed' : ''} ${st.station_code === s.current_station ? '• 📍 Train Here' : ''}
+                                </div>
+                            </div>
+                            <div style="text-align: right; font-family: var(--font-mono); font-size: 0.8rem;">
+                                <div>Arr: ${st.scheduled_arrival}</div>
+                                <div>Dep: ${st.scheduled_departure}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join("");
+            }
+        } catch (e) {
+            if (timeline) timeline.innerHTML = `<div style="color: var(--m-text-dim); padding: 16px;">Unable to retrieve live status for #${trainNumber}.</div>`;
+        }
+    };
+
+    // ================= 10. MOBILE COACH LAYOUT =================
+    function setupMobileCoach() {
+        // Coach view setup
+    }
+
+    window.openMobileCoachLayout = async function(trainNumber) {
+        setMobileView("coach");
+
+        const rakeBadge = $("m-coach-rake-badge");
+        const headerEl = $("m-coach-train-header");
+        const stripEl = $("m-coach-rake-strip");
+        const detailsEl = $("m-coach-details-list");
+
+        if (headerEl) headerEl.textContent = `Loading Train #${trainNumber}...`;
+        if (stripEl) stripEl.innerHTML = `<div style="color: var(--m-text-dim); padding: 12px;">Loading coach strip...</div>`;
+
+        try {
+            const res = await fetch(`/api/trains/${encodeURIComponent(trainNumber)}/coaches`);
+            if (!res.ok) throw new Error("Coach layout failed");
+            const data = await res.json();
+
+            if (headerEl) headerEl.textContent = `${data.train_number} - ${data.train_name}`;
+            if (rakeBadge) rakeBadge.textContent = data.rake_type;
+
+            if (stripEl) {
+                stripEl.innerHTML = `
+                    <div class="coach-loco-block">🚂 LOCO</div>
+                    ${data.coaches.map((c, idx) => `
+                        <div class="coach-block" onclick="selectMobileCoachBlock(${idx})">
+                            <div class="coach-code">${c.coach_name}</div>
+                            <div class="coach-type-lbl">${c.coach_type}</div>
+                            <div class="coach-seats-lbl">${c.seats_count ? c.seats_count + ' seats' : '--'}</div>
+                        </div>
+                    `).join("")}
+                `;
+            }
+
+            if (detailsEl) {
+                detailsEl.innerHTML = data.coaches.map(c => `
+                    <div class="coach-info-card">
+                        <div class="coach-card-header">
+                            <strong>${c.coach_name}</strong>
+                            <span class="m-badge-tag-blue">${c.coach_type}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--m-text-muted); margin-top: 4px;">
+                            Capacity: <strong style="color: #fff;">${c.seats_count || 72} Berths</strong>
+                        </div>
+                    </div>
+                `).join("");
+            }
+        } catch (e) {
+            if (stripEl) stripEl.innerHTML = `<div style="color: var(--m-text-dim); padding: 12px;">Coach composition unavailable.</div>`;
+        }
+    };
+
+    window.selectMobileCoachBlock = function(idx) {
+        document.querySelectorAll("#m-coach-rake-strip .coach-block").forEach((b, i) => {
+            b.classList.toggle("selected", i === idx);
+        });
+    };
+
+    // ================= 11. MOBILE TICKETS & SAVED BOOKINGS =================
+    function setupMobileTickets() {
+        // Initial setup
+    }
+
+    function loadMobileSavedTickets() {
+        const container = $("m-tickets-list-cards");
+        if (!container) return;
+
+        const tickets = [
+            {
+                pnr: "2458917234",
+                train_number: "12307",
+                train_name: "Jodhpur Superfast Express",
+                from: "DHN",
+                to: "JP",
+                date: "Tomorrow",
+                coach: "B2",
+                berth: "24",
+                berth_type: "Lower Berth",
+                status: "CNF"
+            },
+            {
+                pnr: "4521098765",
+                train_number: "12987",
+                train_name: "Ajmer Superfast Express",
+                from: "DHN",
+                to: "JP",
+                date: "In 3 Days",
+                coach: "S3",
+                berth: "42",
+                berth_type: "Side Lower",
+                status: "CNF"
+            }
+        ];
+
+        container.innerHTML = tickets.map(t => `
+            <div class="m-card" style="margin-bottom: 12px;">
+                <div class="m-card-header-flex">
+                    <div>
+                        <span class="m-code-badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); font-size: 0.8rem; padding: 2px 6px;">PNR ${t.pnr}</span>
+                        <strong style="color: #fff; font-size: 0.95rem; display: block; margin-top: 4px;">${t.train_number} - ${escapeHtml(t.train_name)}</strong>
+                    </div>
+                    <span class="m-badge-tag-green">✓ ${t.status}</span>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--m-text-muted); margin: 8px 0;">
+                    <span>${t.from} ➔ ${t.to}</span> • <span>${t.date}</span>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--m-text-dim); margin-bottom: 10px;">
+                    Coach: <strong style="color: #60a5fa;">${t.coach}</strong> • Berth: <strong style="color: #34d399;">${t.berth} (${t.berth_type})</strong>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="m-btn-mini-primary" style="flex: 1;" onclick="quickFillMobilePNR('${t.pnr}'); setMobileView('pnr');">Check PNR</button>
+                    <button type="button" class="m-btn-mini" style="flex: 1;" onclick="openMobileTrainRoute('${t.train_number}')">Live Route</button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    // ================= 12. MOBILE FULL SEARCH HISTORY =================
+    function setupMobileFullHistory() {
+        // Full history view setup
+    }
+
+    async function loadMobileFullHistory() {
+        const container = $("m-full-history-list");
+        if (!container) return;
+
+        try {
+            const res = await fetch("/api/history");
+            if (!res.ok) return;
+            const items = await res.json();
+
+            if (!items.length) {
+                container.innerHTML = `
+                    <div class="m-card" style="text-align: center; padding: 24px; color: var(--m-text-dim);">
+                        No recent search history.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="m-card" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div onclick="handleHistoryItemClick('${escapeJs(item.from_station)}', '${escapeJs(item.to_station)}')" style="flex: 1; cursor: pointer;">
+                        <strong style="color: #fff; font-size: 0.92rem;">${item.train_number ? '#' + item.train_number + ' ' : ''}${escapeHtml(item.train_name || 'Route')}</strong>
+                        <div style="font-size: 0.8rem; color: var(--m-text-muted); margin-top: 2px;">
+                            ${escapeHtml(item.from_station)} ➔ ${escapeHtml(item.to_station)} ${item.journey_date ? '• ' + item.journey_date : ''}
+                        </div>
+                    </div>
+                    <button class="m-btn-mini" onclick="deleteMobileHistoryItem(${item.id})" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">✕</button>
+                </div>
+            `).join("");
+        } catch (e) {}
+    }
+
+    window.deleteMobileHistoryItem = async function(id) {
+        try {
+            await fetch(`/api/history/${id}`, { method: "DELETE" });
+            loadMobileFullHistory();
+            showMobileToast("🗑️ History item removed");
+        } catch (e) {}
+    };
+
+    window.clearMobileHistoryAction = async function() {
+        if (!confirm("Clear all search history?")) return;
+        try {
+            await fetch("/api/history", { method: "DELETE" });
+            loadMobileFullHistory();
+            showMobileToast("🗑️ History cleared");
+        } catch (e) {}
+    };
 })();
+

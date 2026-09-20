@@ -1577,11 +1577,11 @@
     "train_type": "Superfast",
     "source_code": "DHN",
     "source_name": "Dhanbad Junction",
-    "dest_code": "JP",
-    "dest_name": "Jaipur Junction",
+    "dest_code": "AII",
+    "dest_name": "Ajmer Junction",
     "departure_time": "03:12",
-    "arrival_time": "23:15",
-    "duration": "20hr 03min",
+    "arrival_time": "01:45",
+    "duration": "22h 33m",
     "running_days": [
       "Mon",
       "Tue",
@@ -1597,7 +1597,7 @@
       "SL",
       "2S"
     ],
-    "total_distance_km": 1205,
+    "total_distance_km": 1425,
     "pantry": true,
     "stops": [
       {
@@ -1607,14 +1607,34 @@
         "dep": "03:12",
         "halt": 0,
         "day": 1,
-        "pf": "PF 3",
+        "pf": "PF 2",
         "km": 0
+      },
+      {
+        "code": "PNME",
+        "name": "Parasnath",
+        "arr": "03:52",
+        "dep": "03:54",
+        "halt": 2,
+        "day": 1,
+        "pf": "PF 2",
+        "km": 47
+      },
+      {
+        "code": "KQR",
+        "name": "Koderma Junction",
+        "arr": "04:48",
+        "dep": "04:50",
+        "halt": 2,
+        "day": 1,
+        "pf": "PF 4",
+        "km": 123
       },
       {
         "code": "GAYA",
         "name": "Gaya Junction",
-        "arr": "05:40",
-        "dep": "05:45",
+        "arr": "06:05",
+        "dep": "06:10",
         "halt": 5,
         "day": 1,
         "pf": "PF 1",
@@ -1622,9 +1642,9 @@
       },
       {
         "code": "DDU",
-        "name": "Pt. Deen Dayal Upadhyaya",
-        "arr": "08:20",
-        "dep": "08:30",
+        "name": "Pt. Deen Dayal Upadhyaya Junction",
+        "arr": "09:00",
+        "dep": "09:10",
         "halt": 10,
         "day": 1,
         "pf": "PF 2",
@@ -1633,22 +1653,32 @@
       {
         "code": "PRYJ",
         "name": "Prayagraj Junction",
-        "arr": "10:45",
-        "dep": "10:50",
+        "arr": "11:35",
+        "dep": "11:40",
         "halt": 5,
         "day": 1,
-        "pf": "PF 2",
+        "pf": "PF 1",
         "km": 558
       },
       {
         "code": "CNB",
         "name": "Kanpur Central",
-        "arr": "13:20",
-        "dep": "13:25",
+        "arr": "14:00",
+        "dep": "14:05",
         "halt": 5,
         "day": 1,
         "pf": "PF 1",
         "km": 752
+      },
+      {
+        "code": "AF",
+        "name": "Agra Fort",
+        "arr": "18:15",
+        "dep": "18:20",
+        "halt": 5,
+        "day": 1,
+        "pf": "PF 3",
+        "km": 1005
       },
       {
         "code": "KWP",
@@ -1657,18 +1687,28 @@
         "dep": "22:50",
         "halt": 2,
         "day": 1,
-        "pf": "PF 1",
-        "km": 1188
+        "pf": "PF 2",
+        "km": 1275
       },
       {
         "code": "JP",
         "name": "Jaipur Junction",
         "arr": "23:15",
-        "dep": "23:15",
-        "halt": 0,
+        "dep": "23:25",
+        "halt": 10,
         "day": 1,
-        "pf": "PF 4",
-        "km": 1205
+        "pf": "PF 1",
+        "km": 1290
+      },
+      {
+        "code": "AII",
+        "name": "Ajmer Junction",
+        "arr": "01:45",
+        "dep": "01:45",
+        "halt": 0,
+        "day": 2,
+        "pf": "PF 2",
+        "km": 1425
       }
     ]
   },
@@ -1678,24 +1718,28 @@
     "train_type": "Superfast",
     "source_code": "DHN",
     "source_name": "Dhanbad Junction",
-    "dest_code": "JP",
-    "dest_name": "Jaipur Junction",
+    "dest_code": "JU",
+    "dest_name": "Jodhpur Junction",
     "departure_time": "03:25",
-    "arrival_time": "23:35",
-    "duration": "20hr 10min",
+    "arrival_time": "05:40",
+    "duration": "26h 15m",
     "running_days": [
       "Mon",
+      "Tue",
       "Wed",
       "Thu",
-      "Sat"
+      "Fri",
+      "Sat",
+      "Sun"
     ],
     "classes": [
       "1A",
       "2A",
       "3A",
-      "SL"
+      "SL",
+      "2S"
     ],
-    "total_distance_km": 1205,
+    "total_distance_km": 1602,
     "pantry": true,
     "stops": [
       {
@@ -1705,14 +1749,34 @@
         "dep": "03:25",
         "halt": 0,
         "day": 1,
-        "pf": "PF 2",
+        "pf": "PF 3",
         "km": 0
+      },
+      {
+        "code": "PNME",
+        "name": "Parasnath",
+        "arr": "04:02",
+        "dep": "04:04",
+        "halt": 2,
+        "day": 1,
+        "pf": "PF 3",
+        "km": 47
+      },
+      {
+        "code": "KQR",
+        "name": "Koderma Junction",
+        "arr": "04:58",
+        "dep": "05:00",
+        "halt": 2,
+        "day": 1,
+        "pf": "PF 4",
+        "km": 123
       },
       {
         "code": "GAYA",
         "name": "Gaya Junction",
-        "arr": "05:50",
-        "dep": "05:55",
+        "arr": "06:15",
+        "dep": "06:20",
         "halt": 5,
         "day": 1,
         "pf": "PF 1",
@@ -1720,33 +1784,43 @@
       },
       {
         "code": "DDU",
-        "name": "Pt. Deen Dayal Upadhyaya",
-        "arr": "08:35",
-        "dep": "08:45",
+        "name": "Pt. Deen Dayal Upadhyaya Junction",
+        "arr": "09:10",
+        "dep": "09:20",
         "halt": 10,
         "day": 1,
-        "pf": "PF 3",
+        "pf": "PF 2",
         "km": 405
       },
       {
         "code": "PRYJ",
         "name": "Prayagraj Junction",
-        "arr": "10:55",
-        "dep": "11:00",
+        "arr": "11:45",
+        "dep": "11:50",
         "halt": 5,
         "day": 1,
-        "pf": "PF 2",
+        "pf": "PF 1",
         "km": 558
       },
       {
         "code": "CNB",
         "name": "Kanpur Central",
-        "arr": "13:30",
-        "dep": "13:35",
+        "arr": "14:10",
+        "dep": "14:15",
         "halt": 5,
         "day": 1,
         "pf": "PF 1",
         "km": 752
+      },
+      {
+        "code": "AF",
+        "name": "Agra Fort",
+        "arr": "18:25",
+        "dep": "18:30",
+        "halt": 5,
+        "day": 1,
+        "pf": "PF 3",
+        "km": 1005
       },
       {
         "code": "KWP",
@@ -1756,17 +1830,27 @@
         "halt": 2,
         "day": 1,
         "pf": "PF 2",
-        "km": 1188
+        "km": 1275
       },
       {
         "code": "JP",
         "name": "Jaipur Junction",
         "arr": "23:35",
-        "dep": "23:35",
-        "halt": 0,
+        "dep": "23:45",
+        "halt": 10,
         "day": 1,
-        "pf": "PF 3",
-        "km": 1205
+        "pf": "PF 1",
+        "km": 1290
+      },
+      {
+        "code": "JU",
+        "name": "Jodhpur Junction",
+        "arr": "05:40",
+        "dep": "05:40",
+        "halt": 0,
+        "day": 2,
+        "pf": "PF 1",
+        "km": 1602
       }
     ]
   },
@@ -1922,15 +2006,15 @@
   },
   "63556": {
     "train_number": "63556",
-    "train_name": "Barkakana - Asansol MEMU",
+    "train_name": "Barkakana - Asansol MEMU Passenger",
     "train_type": "Passenger",
     "source_code": "CRP",
     "source_name": "Chandrapura Junction",
-    "dest_code": "DHN",
-    "dest_name": "Dhanbad Junction",
-    "departure_time": "05:42",
-    "arrival_time": "06:50",
-    "duration": "1h 08m",
+    "dest_code": "ASN",
+    "dest_name": "Asansol Junction",
+    "departure_time": "05:40",
+    "arrival_time": "08:15",
+    "duration": "2h 35m",
     "running_days": [
       "Mon",
       "Tue",
@@ -1943,7 +2027,7 @@
     "classes": [
       "2S"
     ],
-    "total_distance_km": 34,
+    "total_distance_km": 106,
     "pantry": false,
     "stops": [
       {
@@ -1957,14 +2041,34 @@
         "km": 0
       },
       {
+        "code": "BKSC",
+        "name": "Bokaro Steel City",
+        "arr": "06:05",
+        "dep": "06:08",
+        "halt": 3,
+        "day": 1,
+        "pf": "PF 2",
+        "km": 16
+      },
+      {
         "code": "DHN",
         "name": "Dhanbad Junction",
         "arr": "06:50",
-        "dep": "06:50",
+        "dep": "06:55",
+        "halt": 5,
+        "day": 1,
+        "pf": "PF 3",
+        "km": 48
+      },
+      {
+        "code": "ASN",
+        "name": "Asansol Junction",
+        "arr": "08:15",
+        "dep": "08:15",
         "halt": 0,
         "day": 1,
-        "pf": "PF 4",
-        "km": 34
+        "pf": "PF 1",
+        "km": 106
       }
     ]
   },
@@ -1972,24 +2076,45 @@
     "train_number": "15661",
     "train_name": "Ranchi - Kamakhya Express",
     "train_type": "Mail/Express",
-    "source_code": "CRP",
-    "source_name": "Chandrapura Junction",
-    "dest_code": "DHN",
-    "dest_name": "Dhanbad Junction",
-    "departure_time": "22:50",
-    "arrival_time": "23:55",
-    "duration": "1h 05m",
+    "source_code": "RNC",
+    "source_name": "Ranchi Junction",
+    "dest_code": "GHY",
+    "dest_name": "Guwahati",
+    "departure_time": "20:30",
+    "arrival_time": "14:30",
+    "duration": "18h 00m",
     "running_days": [
       "Wed"
     ],
     "classes": [
       "2A",
       "3A",
-      "SL"
+      "SL",
+      "2S"
     ],
-    "total_distance_km": 34,
-    "pantry": false,
+    "total_distance_km": 1025,
+    "pantry": true,
     "stops": [
+      {
+        "code": "RNC",
+        "name": "Ranchi Junction",
+        "arr": "20:30",
+        "dep": "20:30",
+        "halt": 0,
+        "day": 1,
+        "pf": "PF 1",
+        "km": 0
+      },
+      {
+        "code": "BKSC",
+        "name": "Bokaro Steel City",
+        "arr": "21:50",
+        "dep": "21:55",
+        "halt": 5,
+        "day": 1,
+        "pf": "PF 1",
+        "km": 84
+      },
       {
         "code": "CRP",
         "name": "Chandrapura Junction",
@@ -1997,18 +2122,38 @@
         "dep": "22:50",
         "halt": 5,
         "day": 1,
-        "pf": "PF 2",
-        "km": 0
+        "pf": "PF 1",
+        "km": 100
       },
       {
         "code": "DHN",
         "name": "Dhanbad Junction",
         "arr": "23:55",
-        "dep": "23:55",
-        "halt": 0,
+        "dep": "00:05",
+        "halt": 10,
         "day": 1,
-        "pf": "PF 2",
-        "km": 34
+        "pf": "PF 1",
+        "km": 148
+      },
+      {
+        "code": "ASN",
+        "name": "Asansol Junction",
+        "arr": "01:05",
+        "dep": "01:15",
+        "halt": 10,
+        "day": 2,
+        "pf": "PF 3",
+        "km": 206
+      },
+      {
+        "code": "GHY",
+        "name": "Guwahati",
+        "arr": "14:30",
+        "dep": "14:30",
+        "halt": 0,
+        "day": 2,
+        "pf": "PF 1",
+        "km": 1025
       }
     ]
   },

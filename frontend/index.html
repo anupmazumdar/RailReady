@@ -36,6 +36,9 @@
                     <span class="status-dot"></span>
                     <span id="current-ist-time">Loading IST Time...</span>
                 </div>
+                <button id="btn-theme-toggle" class="btn btn-secondary btn-sm" title="Toggle Light / Dark Mode">
+                    <span id="theme-toggle-icon">🌙</span> <span id="theme-toggle-label">Dark</span>
+                </button>
                 <button id="btn-toggle-mobile" class="btn btn-primary btn-sm" title="Switch to Mobile App Experience">
                     📱 Mobile App View
                 </button>
@@ -56,10 +59,14 @@
                 <button class="nav-tab" data-view="train-details" id="tab-train-details">🚆 Train Details</button>
                 <button class="nav-tab" data-view="running-status" id="tab-running-status">📍 Running Status</button>
                 <button class="nav-tab" data-view="route-timeline" id="tab-route-timeline">🗺️ Route</button>
+                <button class="nav-tab" data-view="coach-layout" id="tab-coach-layout">💺 Coach Layout</button>
+                <button class="nav-tab" data-view="pnr-status" id="tab-pnr-status">🎫 PNR Status</button>
+                <button class="nav-tab" data-view="tickets" id="tab-tickets">🎟️ Tickets</button>
+                <button class="nav-tab" data-view="search-history" id="tab-search-history">🕒 History</button>
                 <button class="nav-tab" data-view="journey-planner" id="tab-journey-planner">🧭 Journey Planner</button>
                 <button class="nav-tab" data-view="tatkal-prep" id="tab-tatkal-prep">⚡ Tatkal Preparation</button>
-                <button class="nav-tab" data-view="passengers" id="tab-passengers">👥 Passenger Details</button>
-                <button class="nav-tab" data-view="notifications" id="tab-notifications">🔔 Notifications</button>
+                <button class="nav-tab" data-view="passengers" id="tab-passengers">👥 Passengers</button>
+                <button class="nav-tab" data-view="notifications" id="tab-notifications">🔔 Alerts</button>
                 <button class="nav-tab" data-view="settings" id="tab-settings">⚙️ Settings</button>
             </nav>
             <button class="nav-scroll-btn" id="nav-scroll-right" aria-label="Scroll Tabs Right" title="Scroll right">
@@ -179,27 +186,60 @@
                 </div>
                 <div style="background: rgba(11, 15, 25, 0.4); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
                     <div class="form-row">
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 2;">
                             <label for="search-input-query">Train Number or Name</label>
-                            <input type="text" id="search-input-query" placeholder="e.g. 12302 or Rajdhani">
+                            <input type="text" id="search-input-query" placeholder="e.g. 12307 or Jodhpur Superfast">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 1;">
                             <label for="search-input-date">Journey Date</label>
                             <input type="date" id="search-input-date">
                         </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="search-input-quota">Quota</label>
+                            <select id="search-input-quota" style="width: 100%; padding: 10px 14px; background: rgba(11, 15, 25, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: #fff;">
+                                <option value="GN">General Quota (GN)</option>
+                                <option value="TQ">Tatkal Quota (TQ)</option>
+                                <option value="PT">Premium Tatkal (PT)</option>
+                                <option value="LD">Ladies Quota (LD)</option>
+                                <option value="SS">Senior Citizen (SS)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
+                    <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-top: 10px;">
+                        <div class="form-group station-input-wrapper" style="flex: 1; min-width: 220px;">
                             <label for="search-input-from">From Station</label>
-                            <input type="text" id="search-input-from" list="station-list" placeholder="e.g. NDLS (New Delhi)">
+                            <input type="text" id="search-input-from" placeholder="e.g. DHN (Dhanbad Junction)" autocomplete="off">
+                            <div class="station-autocomplete-dropdown" id="dropdown-search-from"></div>
                         </div>
-                        <div class="form-group">
+                        <div style="padding-bottom: 6px;">
+                            <button type="button" class="station-swap-btn" id="btn-search-swap" title="Swap From and To stations">⇅</button>
+                        </div>
+                        <div class="form-group station-input-wrapper" style="flex: 1; min-width: 220px;">
                             <label for="search-input-to">To Station</label>
-                            <input type="text" id="search-input-to" list="station-list" placeholder="e.g. BCT (Mumbai Central)">
+                            <input type="text" id="search-input-to" placeholder="e.g. KWP (Khatipura / Jaipur)" autocomplete="off">
+                            <div class="station-autocomplete-dropdown" id="dropdown-search-to"></div>
+                        </div>
+                        <div style="padding-bottom: 6px;">
+                            <button id="btn-execute-search" class="btn btn-primary" style="height: 42px;">Search Trains</button>
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px;">
-                        <button id="btn-execute-search" class="btn btn-primary">Search Trains</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 0.82rem; color: var(--text-muted); flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <span>Popular Corridors:</span>
+                            <a href="javascript:void(0)" onclick="quickSetRoute('DHN', 'KWP')" style="color: #60a5fa; margin-left: 6px; text-decoration: underline;">DHN ➔ KWP</a>
+                            <a href="javascript:void(0)" onclick="quickSetRoute('DHN', 'JP')" style="color: #60a5fa; margin-left: 8px; text-decoration: underline;">DHN ➔ JP</a>
+                            <a href="javascript:void(0)" onclick="quickSetRoute('CRP', 'DHN')" style="color: #60a5fa; margin-left: 8px; text-decoration: underline;">CRP ➔ DHN</a>
+                            <a href="javascript:void(0)" onclick="quickSetRoute('NDLS', 'BCT')" style="color: #60a5fa; margin-left: 8px; text-decoration: underline;">NDLS ➔ BCT</a>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <label for="search-sort-select">Sort by:</label>
+                            <select id="search-sort-select" style="background: rgba(11, 15, 25, 0.8); border: 1px solid var(--border-subtle); border-radius: 4px; color: #fff; padding: 4px 8px; font-size: 0.82rem;">
+                                <option value="DEFAULT">Recommended</option>
+                                <option value="DEP_ASC">Departure: Earliest</option>
+                                <option value="DUR_ASC">Duration: Fastest</option>
+                                <option value="ARR_ASC">Arrival: Earliest</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -269,6 +309,86 @@
                 </div>
                 <div id="route-timeline-content">
                     <div style="text-align: center; color: var(--text-dim); padding: 30px;">Select a train to inspect the station sequence, scheduled halts, and platform allocations.</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW: COACH LAYOUT & SEAT INFORMATION ================= -->
+        <div class="view-panel" id="view-coach-layout">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>💺</span> Coach Composition & Seat Layout</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="coach-train-input" placeholder="Train #" style="width: 130px; padding: 6px 10px;">
+                        <button id="btn-load-coach-layout" class="btn btn-primary btn-sm">Show Layout</button>
+                    </div>
+                </div>
+                <div id="coach-layout-content">
+                    <div style="text-align: center; color: var(--text-dim); padding: 30px;">
+                        Enter a train number above (e.g. <strong>12307</strong>, <strong>12987</strong>, <strong>12952</strong>) to view the complete coach rake sequence and berth classification.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW: PNR STATUS ================= -->
+        <div class="view-panel" id="view-pnr-status">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🎫</span> PNR Status & Passenger Details</h2>
+                    <span class="badge-tag badge-tag-blue">10-Digit PNR Verification</span>
+                </div>
+                <div style="background: rgba(11, 15, 25, 0.4); padding: 22px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); max-width: 640px; margin: 0 auto 24px;">
+                    <label for="pnr-input-field" style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">
+                        Enter 10-Digit PNR Number
+                    </label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="pnr-input-field" maxlength="10" placeholder="e.g. 2458917234" style="flex: 1; font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 2px; padding: 10px 14px;">
+                        <button id="btn-check-pnr" class="btn btn-primary" style="padding: 10px 20px;">Find PNR Status</button>
+                    </div>
+                    <div id="pnr-validation-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 8px; display: none;"></div>
+                    <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center;">
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">Quick Sample PNRs:</span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="quickFillPNR('2458917234')">2458917234</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="quickFillPNR('4521098765')">4521098765</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="quickFillPNR('8743120956')">8743120956</button>
+                    </div>
+                </div>
+
+                <div id="pnr-result-container">
+                    <div style="text-align: center; color: var(--text-dim); padding: 30px;">
+                        Enter a 10-digit PNR to check current booking status, coach/berth allotment, and charting state.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW: TICKETS & SAVED BOOKINGS ================= -->
+        <div class="view-panel" id="view-tickets">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🎟️</span> Tickets & Saved Journeys</h2>
+                    <button class="btn btn-primary btn-sm" onclick="switchView('train-search')">➕ Search New Train</button>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <h3 style="font-size: 1rem; color: #93c5fd; margin-bottom: 12px;">Your Saved Bookings & Active Tickets</h3>
+                    <div id="tickets-list-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ================= VIEW: SEARCH HISTORY ================= -->
+        <div class="view-panel" id="view-search-history">
+            <section class="glass-card">
+                <div class="card-header">
+                    <h2 class="card-title"><span>🕒</span> Search History & Recent Corridors</h2>
+                    <button id="btn-clear-history-desktop" class="btn btn-secondary btn-sm" style="color: #ef4444;">Clear All History</button>
+                </div>
+                <div id="history-list-container">
+                    <!-- Populated dynamically -->
                 </div>
             </section>
         </div>
@@ -538,7 +658,7 @@
                     Configure local alerts that trigger before your Tatkal booking window opens. All notifications run purely locally on your device without launching external apps.
                 </p>
 
-                <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
                     <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <div style="font-weight: 600; color: #fff;">Milestone Audio Chime</div>
@@ -555,6 +675,15 @@
                         <button id="btn-test-notification-view" class="btn btn-primary btn-sm">Request & Test</button>
                     </div>
                 </div>
+
+                <!-- Dynamic Journey & Train Alerts -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="font-size: 1rem; color: #93c5fd;">Active Journey & Train Alerts</h3>
+                    <button id="btn-open-add-alert-modal" class="btn btn-primary btn-sm" onclick="showAddAlertPrompt()">➕ New Alert</button>
+                </div>
+                <div id="desktop-alerts-list">
+                    <!-- Populated dynamically -->
+                </div>
             </section>
         </div>
 
@@ -562,15 +691,42 @@
         <div class="view-panel" id="view-settings">
             <section class="glass-card">
                 <div class="card-header">
-                    <h2 class="card-title"><span>⚙️</span> RailReady Settings & Data Governance</h2>
+                    <h2 class="card-title"><span>⚙️</span> RailReady Settings & Preferences</h2>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Theme & Display Settings -->
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <h3 style="font-size: 0.95rem; color: #60a5fa; margin-bottom: 12px;">Theme & Visual Appearance</h3>
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <label style="font-size: 0.88rem; color: var(--text-muted);">Color Theme:</label>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-set-theme-dark" onclick="applyTheme('dark')">🌙 Dark Mode</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-set-theme-light" onclick="applyTheme('light')">☀️ Light Mode</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-set-theme-auto" onclick="applyTheme('auto')">🖥️ System Default</button>
+                        </div>
+                    </div>
+
+                    <!-- Language Selector Placeholder -->
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 18px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <h3 style="font-size: 0.95rem; color: #60a5fa; margin-bottom: 12px;">Language (Internationalization)</h3>
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <select id="settings-language-select" style="padding: 8px 12px; background: rgba(11, 15, 25, 0.8); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); color: #fff;">
+                                <option value="en" selected>English (Default)</option>
+                                <option value="hi">हिंदी (Hindi)</option>
+                                <option value="bn">বাংলা (Bengali)</option>
+                                <option value="mr">मराठी (Marathi)</option>
+                                <option value="te">తెలుగు (Telugu)</option>
+                                <option value="ta">தமிழ் (Tamil)</option>
+                            </select>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Centralized string localization ready</span>
+                        </div>
+                    </div>
+
                     <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
                         <h3 style="font-size: 0.95rem; color: #60a5fa; margin-bottom: 8px;">Active Train Data Provider</h3>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div>
-                                <strong style="color: #34d399;">MockTrainDataProvider (Offline High-Fidelity)</strong>
+                                <strong style="color: #34d399;">MockTrainDataProvider (Offline High-Fidelity Simulation)</strong>
                                 <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">Zero scraping, 100% offline simulation. To use an authorized commercial feed, configure TRAIN_DATA_PROVIDER in environment.</p>
                             </div>
                             <span class="badge-tag badge-tag-green">ACTIVE</span>
@@ -584,7 +740,15 @@
                         </p>
                     </div>
 
-                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <div style="font-weight: 600; color: #fff;">Search History Storage</div>
+                            <div style="font-size: 0.82rem; color: var(--text-muted);">Stored locally in SQLite database.</div>
+                        </div>
+                        <button id="btn-clear-history-settings" class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="clearSearchHistoryAction()">Clear Search History</button>
+                    </div>
+
+                    <div style="background: rgba(11, 15, 25, 0.5); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <div>
                             <div style="font-weight: 600; color: #fff;">Local Application Database</div>
                             <div style="font-size: 0.82rem; color: var(--text-muted);">Stored at storage/tatkal_assistant.db. No passwords or OTPs stored.</div>
@@ -670,27 +834,46 @@
                     <span class="drawer-item-icon">🚆</span>
                     <span class="drawer-item-label">Train Search & Schedule</span>
                 </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-pnr">
+                    <span class="drawer-item-icon">🎫</span>
+                    <span class="drawer-item-label">PNR Status Check</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-tickets">
+                    <span class="drawer-item-icon">🎟️</span>
+                    <span class="drawer-item-label">Tickets & Saved Bookings</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-route">
+                    <span class="drawer-item-icon">📍</span>
+                    <span class="drawer-item-label">Live Running Status & Route</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-coach">
+                    <span class="drawer-item-icon">💺</span>
+                    <span class="drawer-item-label">Coach & Seat Layout</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-history">
+                    <span class="drawer-item-icon">🕒</span>
+                    <span class="drawer-item-label">Recent Search History</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-alerts">
+                    <span class="drawer-item-icon">🔔</span>
+                    <span class="drawer-item-label">Reminder & Notification Settings</span>
+                </a>
                 <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-tatkal">
                     <span class="drawer-item-icon">⚡</span>
                     <span class="drawer-item-label">Tatkal Prep & Checklist</span>
                 </a>
                 <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-passengers">
                     <span class="drawer-item-icon">👥</span>
-                    <span class="drawer-item-label">Prepared Passengers & Text Area</span>
-                </a>
-                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-alerts">
-                    <span class="drawer-item-icon">🔔</span>
-                    <span class="drawer-item-label">Reminder & Notification Settings</span>
+                    <span class="drawer-item-label">Prepared Passengers</span>
                 </a>
                 <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-alternates">
                     <span class="drawer-item-icon">🧭</span>
                     <span class="drawer-item-label">Split Routes & Alternatives</span>
                 </a>
                 <div class="drawer-divider"></div>
-                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-update-timetable">
-                    <span class="drawer-item-icon">🔄</span>
-                    <span class="drawer-item-label">Sync Offline Timetables</span>
-                    <span class="drawer-badge-pill">26 corridors</span>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-nav-theme-toggle">
+                    <span class="drawer-item-icon" id="m-drawer-theme-icon">🌙</span>
+                    <span class="drawer-item-label" id="m-drawer-theme-label">Switch to Light Mode</span>
                 </a>
                 <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-open-irctc">
                     <span class="drawer-item-icon">🌐</span>
@@ -720,6 +903,9 @@
                 <h2 class="mobile-header-title" id="m-header-title">RailReady</h2>
             </div>
             <div class="top-bar-right" id="m-header-actions">
+                <button class="icon-btn" id="m-btn-theme" title="Toggle Light / Dark Theme" aria-label="Toggle Theme">
+                    <span id="m-top-theme-icon" style="font-size: 1.15rem;">🌙</span>
+                </button>
                 <button class="icon-btn" id="m-btn-open-irctc-top" title="Open IRCTC Guide" aria-label="Open IRCTC">
                     <span style="font-size: 1.15rem;">🌐</span>
                 </button>
@@ -1185,25 +1371,138 @@
                     <!-- Populated dynamically by mobile.js -->
                 </div>
             </section>
+
+            <!-- ================= MOBILE VIEW 8: PNR STATUS ================= -->
+            <section class="m-view" id="m-view-pnr">
+                <div class="m-card" style="margin-bottom: 16px;">
+                    <div class="m-card-header-flex">
+                        <h3 class="m-card-title"><span>🎫</span> PNR Status Enquiry</h3>
+                        <span class="m-badge-tag-green">PRS Offline Verification</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--m-text-muted); margin-bottom: 12px;">
+                        Enter your 10-digit PNR number printed on the top-left of your railway ticket.
+                    </p>
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="m-pnr-input" class="m-station-input" maxlength="10" placeholder="Enter 10-Digit PNR" style="font-family: var(--font-mono); font-size: 1.15rem; letter-spacing: 2px; text-align: center; border-bottom: 2px solid #22c55e;">
+                    </div>
+                    <div id="m-pnr-error" style="color: #ef4444; font-size: 0.82rem; margin-bottom: 10px; display: none;"></div>
+                    <button class="m-btn-green" id="m-btn-check-pnr" style="margin: 0; padding: 12px; font-weight: 700;">
+                        Find PNR Status
+                    </button>
+                    <div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; align-items: center;">
+                        <span style="font-size: 0.75rem; color: var(--m-text-muted);">Quick Sample PNRs:</span>
+                        <button type="button" class="m-btn-mini" onclick="quickFillMobilePNR('2458917234')">2458917234</button>
+                        <button type="button" class="m-btn-mini" onclick="quickFillMobilePNR('4521098765')">4521098765</button>
+                    </div>
+                </div>
+
+                <div id="m-pnr-result-cards">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 9: TICKETS & SAVED BOOKINGS ================= -->
+            <section class="m-view" id="m-view-tickets">
+                <div class="m-card" style="margin-bottom: 16px;">
+                    <div class="m-card-header-flex">
+                        <h3 class="m-card-title"><span>🎟️</span> Your Saved Tickets & Bookings</h3>
+                        <button class="m-btn-mini-primary" onclick="setMobileView('trains')">➕ Find Trains</button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--m-text-muted); margin-bottom: 0;">
+                        Offline record organizer for planned Tatkal journeys and tracked PNRs.
+                    </p>
+                </div>
+
+                <div class="m-section-header">ACTIVE TICKETS & UPCOMING JOURNEYS</div>
+                <div id="m-tickets-list-cards">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 10: ROUTE TIMELINE & RUNNING STATUS ================= -->
+            <section class="m-view" id="m-view-route">
+                <div class="m-card" id="m-route-status-card" style="margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong id="m-route-train-title" style="color: #fff; font-size: 1.05rem;">12307 - Jodhpur Superfast Express</strong>
+                        <span id="m-route-status-badge" class="m-badge-tag-green">RUNNING</span>
+                    </div>
+
+                    <!-- Freshness ticker & Refresh -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(11, 15, 25, 0.6); padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.8rem;">
+                        <span id="m-route-freshness" style="color: #93c5fd;">Updated just now</span>
+                        <button id="m-btn-refresh-route" class="btn-refresh-pill" style="font-size: 0.8rem;">🔄 Refresh</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
+                        <div><span style="color: var(--m-text-dim);">LOCATION:</span> <strong id="m-route-curr-loc" style="color: #60a5fa;">Parasnath (PNME)</strong></div>
+                        <div><span style="color: var(--m-text-dim);">DELAY:</span> <strong id="m-route-delay-str" style="color: #fcd34d;">+12 mins late</strong></div>
+                    </div>
+                </div>
+
+                <div class="m-section-header">STATION HALTS & TIMELINE</div>
+                <div id="m-route-timeline-nodes" class="route-timeline-tree" style="padding-left: 24px;">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 11: COACH LAYOUT ================= -->
+            <section class="m-view" id="m-view-coach">
+                <div class="m-card" style="margin-bottom: 16px;">
+                    <div class="m-card-header-flex">
+                        <h3 class="m-card-title"><span>💺</span> Coach Composition & Layout</h3>
+                        <span id="m-coach-rake-badge" class="m-badge-tag-green">LHB Rake</span>
+                    </div>
+                    <div id="m-coach-train-header" style="font-size: 0.88rem; color: #fff; font-weight: 600; margin-bottom: 12px;">
+                        Train #12307 - Jodhpur Superfast Express
+                    </div>
+                    <div class="coach-rake-container">
+                        <div class="coach-rake-strip" id="m-coach-rake-strip">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="m-section-header">COACH DETAILS & BERTH LAYOUT</div>
+                <div id="m-coach-details-list" class="coach-cards-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 12: SEARCH HISTORY ================= -->
+            <section class="m-view" id="m-view-history">
+                <div class="m-card" style="margin-bottom: 16px;">
+                    <div class="m-card-header-flex">
+                        <h3 class="m-card-title"><span>🕒</span> Search History</h3>
+                        <button class="m-btn-mini" style="color: #ef4444;" onclick="clearMobileHistoryAction()">Clear All</button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--m-text-muted); margin: 0;">
+                        Recent train and station route searches. Tap to reopen any search instantly.
+                    </p>
+                </div>
+
+                <div id="m-full-history-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
         </main>
 
-        <!-- Bottom Navigation Bar (5 Main App Tabs: HOME, TRAINS, TATKAL, PASSENGERS, ALERTS) -->
+        <!-- Bottom Navigation Bar (5 Main App Tabs: HOME, SEARCH, PNR, TICKETS, ALERTS) -->
         <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
             <button class="bottom-nav-tab active" id="m-tab-dashboard" data-mview="dashboard">
                 <span class="b-nav-icon">🏠</span>
                 <span class="b-nav-label">HOME</span>
             </button>
             <button class="bottom-nav-tab" id="m-tab-trains" data-mview="trains">
-                <span class="b-nav-icon">🚆</span>
-                <span class="b-nav-label">TRAINS</span>
+                <span class="b-nav-icon">🔍</span>
+                <span class="b-nav-label">SEARCH</span>
             </button>
-            <button class="bottom-nav-tab" id="m-tab-tatkal" data-mview="tatkal">
-                <span class="b-nav-icon">⚡</span>
-                <span class="b-nav-label">TATKAL</span>
+            <button class="bottom-nav-tab" id="m-tab-pnr" data-mview="pnr">
+                <span class="b-nav-icon">🎫</span>
+                <span class="b-nav-label">PNR</span>
             </button>
-            <button class="bottom-nav-tab" id="m-tab-passengers" data-mview="passengers">
-                <span class="b-nav-icon">👥</span>
-                <span class="b-nav-label">PASSENGERS</span>
+            <button class="bottom-nav-tab" id="m-tab-tickets" data-mview="tickets">
+                <span class="b-nav-icon">🎟️</span>
+                <span class="b-nav-label">TICKETS</span>
             </button>
             <button class="bottom-nav-tab" id="m-tab-alerts" data-mview="alerts">
                 <span class="b-nav-icon">🔔</span>

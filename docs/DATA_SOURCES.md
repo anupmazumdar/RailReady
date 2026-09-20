@@ -49,6 +49,8 @@ To decouple the application from any single data provider and guarantee zero leg
                | - get_train_details()         |
                | - get_train_route()           |
                | - get_running_status()        |
+               | - get_coach_composition()     |
+               | - get_pnr_status()            |
                +---------------+---------------+
                                |
         +----------------------+----------------------+

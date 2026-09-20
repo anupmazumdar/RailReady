@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Any
 from backend.train_info.schemas.train_schemas import (
     TrainSummary,
     TrainDetails,
@@ -44,3 +44,11 @@ class TrainDataProvider(ABC):
     ) -> Optional[RunningStatus]:
         """Retrieve live or estimated running status, delays, and current location."""
         pass
+
+    def get_pnr_status(self, pnr: str) -> Optional[Any]:
+        """Retrieve PNR status and passenger records."""
+        return None
+
+    def get_coach_composition(self, train_number: str) -> Optional[Any]:
+        """Retrieve coach layout and composition for a train."""
+        return None

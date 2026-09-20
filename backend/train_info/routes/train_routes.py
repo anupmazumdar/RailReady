@@ -55,6 +55,7 @@ def get_train_route_endpoint(train_number: str):
 
 
 @train_router.get("/{train_number}/status", response_model=RunningStatus)
+@train_router.get("/{train_number}/running-status", response_model=RunningStatus)
 def get_running_status_endpoint(
     train_number: str,
     journey_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)")
@@ -67,3 +68,15 @@ def get_running_status_endpoint(
             detail=f"Running status for train '{train_number}' is unavailable."
         )
     return status
+
+
+@train_router.get("/{train_number}/coaches")
+def get_train_coaches_endpoint(train_number: str):
+    """Retrieve coach composition and layout for a train."""
+    composition = train_service.get_coach_composition(train_number)
+    if not composition:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Coach composition for train '{train_number}' is unavailable."
+        )
+    return composition
