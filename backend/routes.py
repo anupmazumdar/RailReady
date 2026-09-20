@@ -17,7 +17,8 @@ from utils.time_calc import (
 )
 from utils.clipboard import (
     generate_full_passenger_summary,
-    generate_quick_row_format
+    generate_quick_row_format,
+    generate_irctc_quick_format
 )
 from utils.route_split import (
     find_direct_trains,
@@ -154,9 +155,11 @@ def get_clipboard_text():
     journey = db.get_latest_journey()
     summary = generate_full_passenger_summary(passengers, journey)
     row_format = generate_quick_row_format(passengers)
+    irctc_format = generate_irctc_quick_format(passengers)
     return {
         "formatted_summary": summary,
         "row_format": row_format,
+        "irctc_format": irctc_format,
         "count": len(passengers)
     }
 

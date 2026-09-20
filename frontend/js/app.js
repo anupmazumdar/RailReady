@@ -8,6 +8,8 @@ let lastSearchResults = [];
 let currentSearchCategory = "ALL";
 let jpAutoDiscoveredTrains = [];
 let currentJpCategory = "ALL";
+let preparedPassengers = [];
+let textareaFormats = { dash: "full", view: "full" };
 
 // Initialize on DOM Load
 document.addEventListener("DOMContentLoaded", () => {
@@ -261,6 +263,16 @@ function setupEventListeners() {
 
     const btnViewCopy = document.getElementById("btn-view-copy-all-passengers");
     if (btnViewCopy) btnViewCopy.addEventListener("click", copyAllPassengerDetails);
+
+    // Auto-select text on click for passenger textareas
+    const dashTa = document.getElementById("dash-passenger-textarea");
+    if (dashTa) {
+        dashTa.addEventListener("click", () => dashTa.select());
+    }
+    const viewTa = document.getElementById("view-passenger-textarea");
+    if (viewTa) {
+        viewTa.addEventListener("click", () => viewTa.select());
+    }
 
     // Checklist Reset
     const btnTatkalReset = document.getElementById("btn-tatkal-reset-checklist");
@@ -1054,22 +1066,39 @@ async function loadPassengers() {
 }
 
 function renderPassengers(passengers) {
+    preparedPassengers = passengers || [];
     const dashContainer = document.getElementById("dash-passenger-list");
     const viewContainer = document.getElementById("view-passenger-container");
     const dashCount = document.getElementById("dash-passenger-count");
     const addPanel = document.getElementById("view-add-passenger-panel");
 
-    if (dashCount) dashCount.textContent = passengers.length;
+    if (dashCount) dashCount.textContent = preparedPassengers.length;
 
-    // Dashboard preview
+    // Dashboard preview - Full Details visible on each card
     if (dashContainer) {
-        if (!passengers || passengers.length === 0) {
-            dashContainer.innerHTML = `<div style="color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 12px;">No passengers prepared.</div>`;
+        if (!preparedPassengers || preparedPassengers.length === 0) {
+            dashContainer.innerHTML = `<div style="color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 16px;">No passengers prepared. Add in Passenger Details tab.</div>`;
         } else {
-            dashContainer.innerHTML = passengers.map((p, idx) => `
-                <div style="background: rgba(11, 15, 25, 0.5); padding: 8px 12px; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem;">
-                    <div>${idx + 1}. <strong>${escapeHtml(p.name)}</strong> (${p.age}y, ${p.gender})</div>
-                    <button class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.name)}', 'Name')">Copy Name</button>
+            dashContainer.innerHTML = preparedPassengers.map((p, idx) => `
+                <div class="dash-passenger-item" id="dash-pass-card-${p.id || idx}">
+                    <div class="dash-passenger-header">
+                        <div>
+                            <strong style="color: #fff; font-size: 0.95rem;">${idx + 1}. ${escapeHtml(p.name)}</strong>
+                        </div>
+                        <div class="passenger-meta-row">
+                            <span class="meta-badge meta-badge-gender">${p.age} yrs • ${p.gender}</span>
+                            <span class="meta-badge meta-badge-berth">🛏️ ${escapeHtml(p.berth_preference || 'No Preference')}</span>
+                            <span class="meta-badge meta-badge-meal">🥗 ${escapeHtml(p.meal_preference || 'None')}</span>
+                            ${p.senior_citizen_opt ? `<span class="meta-badge meta-badge-senior">👴 Senior Concession</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="dash-passenger-copy-row">
+                        <span style="font-size: 0.74rem; color: var(--text-muted); margin-right: 2px;">Quick Copy:</span>
+                        <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${escapeJs(p.name)}', 'Name')">📋 Name</button>
+                        <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${p.age}', 'Age')">📋 Age</button>
+                        <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${escapeJs(p.berth_preference || '')}', 'Berth')">🛏️ Berth</button>
+                        <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${escapeJs(p.meal_preference || '')}', 'Meal')">🥗 Meal</button>
+                    </div>
                 </div>
             `).join("");
         }
@@ -1077,34 +1106,141 @@ function renderPassengers(passengers) {
 
     // Full Passenger View
     if (viewContainer) {
-        if (!passengers || passengers.length === 0) {
+        if (!preparedPassengers || preparedPassengers.length === 0) {
             viewContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">No passengers prepared yet. Add up to 4 passengers below.</div>`;
             if (addPanel) addPanel.style.display = "block";
-            return;
+        } else {
+            viewContainer.innerHTML = preparedPassengers.map((p, idx) => `
+                <div class="passenger-card" id="passenger-card-${p.id}">
+                    <div class="passenger-details" style="flex: 1;">
+                        <div class="passenger-name" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 1.05rem; font-weight: 700; color: #fff;">${idx + 1}. ${escapeHtml(p.name)}</span>
+                            <span class="meta-badge meta-badge-gender">${p.age} yrs • ${p.gender}</span>
+                            <span class="meta-badge meta-badge-berth">🛏️ ${escapeHtml(p.berth_preference || 'No Preference')}</span>
+                            <span class="meta-badge meta-badge-meal">🥗 ${escapeHtml(p.meal_preference || 'None')}</span>
+                            ${p.senior_citizen_opt ? `<span class="meta-badge meta-badge-senior">👴 Senior Concession</span>` : ''}
+                        </div>
+                        <div class="passenger-sub" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">Name: <strong>${escapeHtml(p.name)}</strong></span>
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">Age: <strong>${p.age}</strong></span>
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">Gender: <strong>${p.gender}</strong></span>
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">Berth: <strong>${p.berth_preference}</strong></span>
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">Meal: <strong>${p.meal_preference}</strong></span>
+                        </div>
+                    </div>
+                    <div class="passenger-actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.name)}', 'Name')">📋 Name</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${p.age}', 'Age')">📋 Age</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.berth_preference || '')}', 'Berth')">🛏️ Berth</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.meal_preference || '')}', 'Meal')">🥗 Meal</button>
+                        <button type="button" class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePassenger(${p.id})" title="Remove Passenger">✕</button>
+                    </div>
+                </div>
+            `).join("");
+
+            if (addPanel) addPanel.style.display = preparedPassengers.length >= 4 ? "none" : "block";
         }
+    }
 
-        viewContainer.innerHTML = passengers.map((p, idx) => `
-            <div class="passenger-card" id="passenger-card-${p.id}">
-                <div class="passenger-details">
-                    <div class="passenger-name">
-                        ${idx + 1}. ${escapeHtml(p.name)} 
-                        <span style="font-size: 0.75rem; color: var(--text-dim); font-weight: normal;">(${p.age} yrs, ${p.gender})</span>
-                    </div>
-                    <div class="passenger-sub">
-                        Berth: <strong>${p.berth_preference}</strong> | Meal: <strong>${p.meal_preference}</strong>
-                    </div>
-                </div>
-                <div class="passenger-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.name)}', 'Name')">Copy Name</button>
-                    <button class="btn btn-secondary btn-sm" onclick="copyIndividualField('${p.age}', 'Age')">Copy Age</button>
-                    <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePassenger(${p.id})">✕</button>
-                </div>
-            </div>
-        `).join("");
+    // Update Textareas with all details in active formats
+    updatePassengerTextareas();
+}
 
-        if (addPanel) addPanel.style.display = passengers.length >= 4 ? "none" : "block";
+function updatePassengerTextareas() {
+    const dashTextarea = document.getElementById("dash-passenger-textarea");
+    const viewTextarea = document.getElementById("view-passenger-textarea");
+
+    if (dashTextarea) {
+        dashTextarea.value = generatePassengerText(preparedPassengers, textareaFormats.dash);
+    }
+    if (viewTextarea) {
+        viewTextarea.value = generatePassengerText(preparedPassengers, textareaFormats.view);
     }
 }
+
+function generatePassengerText(passengers, format = "full") {
+    if (!passengers || passengers.length === 0) {
+        return "No passenger details prepared. Add passengers in Passenger Details tab.";
+    }
+
+    if (format === "row") {
+        const rows = ["# | Name | Age | Gender | Berth | Meal | Senior Citizen"];
+        passengers.forEach((p, idx) => {
+            rows.push(`${idx + 1}, ${p.name}, ${p.age}, ${p.gender}, ${p.berth_preference}, ${p.meal_preference}, ${p.senior_citizen_opt ? 'Yes' : 'No'}`);
+        });
+        return rows.join("\n");
+    }
+
+    if (format === "irctc") {
+        return passengers.map((p, idx) => {
+            const sr = p.senior_citizen_opt ? " | [Senior Citizen Concession]" : "";
+            return `${idx + 1}. ${p.name} | ${p.age}y | ${p.gender} | Berth: ${p.berth_preference} | Meal: ${p.meal_preference}${sr}`;
+        }).join("\n");
+    }
+
+    // Default "full" format: complete human-readable summary
+    const lines = [
+        `=== PREPARED PASSENGERS (${passengers.length}/4) ===`
+    ];
+    if (activeJourney) {
+        lines.push(`Route: ${activeJourney.from_station} -> ${activeJourney.to_station} | Date: ${activeJourney.journey_date}`);
+        lines.push(`Train: ${activeJourney.primary_train || activeJourney.preferred_train || 'N/A'} (${activeJourney.preferred_class || '3A'})`);
+        lines.push(`Quota: Tatkal (${activeJourney.tatkal_type || 'AC'})`);
+        lines.push("--------------------------------------------------");
+    }
+
+    passengers.forEach((p, idx) => {
+        lines.push(`Passenger ${idx + 1}:`);
+        lines.push(`  Full Name:       ${p.name}`);
+        lines.push(`  Age & Gender:    ${p.age} years | ${p.gender}`);
+        lines.push(`  Berth Choice:    ${p.berth_preference}`);
+        lines.push(`  Meal Choice:     ${p.meal_preference}`);
+        lines.push(`  Senior Citizen:  ${p.senior_citizen_opt ? 'Yes (Concession Opted)' : 'No'}`);
+        if (idx < passengers.length - 1) lines.push("");
+    });
+
+    lines.push("==================================================");
+    lines.push("* Instructions: Use these exact details to manually fill passenger fields on IRCTC portal.");
+
+    return lines.join("\n");
+}
+
+window.switchTextareaFormat = function(prefix, format) {
+    textareaFormats[prefix] = format;
+
+    // Update active pill button
+    const container = prefix === "dash" ? document.getElementById("dash-textarea-wrapper") : document.getElementById("view-textarea-wrapper");
+    if (container) {
+        container.querySelectorAll(".format-pill").forEach(btn => {
+            if (btn.id === `${prefix}-pill-${format}`) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+    }
+
+    const textarea = document.getElementById(`${prefix}-passenger-textarea`);
+    if (textarea) {
+        textarea.value = generatePassengerText(preparedPassengers, format);
+    }
+};
+
+window.copyTextareaContent = function(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    if (!textarea || !textarea.value || textarea.value.startsWith("No passenger")) {
+        showToast("⚠️ No passenger details available to copy.");
+        return;
+    }
+    copyToClipboard(textarea.value);
+    showToast("📋 Copied all passenger details to clipboard!");
+};
+
+window.selectTextarea = function(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    if (textarea) {
+        textarea.focus();
+        textarea.select();
+        showToast("🔍 All text selected! Press Ctrl+C to copy.");
+    }
+};
 
 async function handlePassengerSubmit(e) {
     e.preventDefault();
@@ -1113,13 +1249,15 @@ async function handlePassengerSubmit(e) {
     const gender = document.getElementById("view-passenger-gender").value;
     const berth = document.getElementById("view-passenger-berth").value;
     const meal = document.getElementById("view-passenger-meal").value;
+    const senior = Boolean(document.getElementById("view-passenger-senior")?.checked);
 
     const payload = {
         name: name,
         age: age,
         gender: gender,
         berth_preference: berth,
-        meal_preference: meal
+        meal_preference: meal,
+        senior_citizen_opt: senior
     };
 
     try {

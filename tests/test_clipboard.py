@@ -72,3 +72,21 @@ def test_quick_row_format():
     ]
     row = generate_quick_row_format(passengers)
     assert "Rohit Verma, 28, MALE, Side Lower, None" in row
+
+
+def test_irctc_quick_format():
+    from utils.clipboard import generate_irctc_quick_format
+    passengers = [
+        PassengerResponse(
+            id=1,
+            name="Anup Mazumdar",
+            age=30,
+            gender=Gender.MALE,
+            berth_preference=BerthPreference.LOWER,
+            meal_preference=MealPreference.VEG,
+            senior_citizen_opt=False
+        )
+    ]
+    formatted = generate_irctc_quick_format(passengers)
+    assert "1. Anup Mazumdar | 30y | MALE | Lower | Veg" in formatted
+

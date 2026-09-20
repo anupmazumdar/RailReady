@@ -49,3 +49,17 @@ def generate_quick_row_format(passengers: List[PassengerResponse]) -> str:
     for p in passengers:
         rows.append(f"{p.name}, {p.age}, {p.gender.value}, {p.berth_preference.value}, {p.meal_preference.value}")
     return "\n".join(rows)
+
+
+def generate_irctc_quick_format(passengers: List[PassengerResponse]) -> str:
+    """
+    Generates an IRCTC form-aligned pipe-separated fast entry string.
+    """
+    if not passengers:
+        return ""
+    lines = []
+    for idx, p in enumerate(passengers, start=1):
+        sr = " [Senior Citizen]" if p.senior_citizen_opt else ""
+        lines.append(f"{idx}. {p.name} | {p.age}y | {p.gender.value} | {p.berth_preference.value} | {p.meal_preference.value}{sr}")
+    return "\n".join(lines)
+

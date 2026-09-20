@@ -119,10 +119,36 @@
                     <section class="glass-card">
                         <div class="card-header">
                             <h3 class="card-title"><span>👥</span> Prepared Passengers (<span id="dash-passenger-count">0</span>/4)</h3>
-                            <button class="btn btn-accent btn-sm" id="btn-dash-copy-passengers">📋 Copy All</button>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary btn-sm" onclick="switchView('passengers')">⚙️ Manage</button>
+                                <button class="btn btn-accent btn-sm" id="btn-dash-copy-passengers">📋 Copy All</button>
+                            </div>
                         </div>
-                        <div id="dash-passenger-list" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div id="dash-passenger-list" style="display: flex; flex-direction: column; gap: 10px;">
                             <div style="color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 12px;">No passengers prepared. Add in Passenger Details tab.</div>
+                        </div>
+
+                        <!-- Dedicated All Details Text Area -->
+                        <div class="passenger-textarea-wrapper" id="dash-textarea-wrapper">
+                            <div class="textarea-header-bar">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-size: 0.85rem; font-weight: 600; color: #93c5fd;">📋 All Details Text Area</span>
+                                    <span class="badge-tag badge-tag-blue" style="font-size: 0.72rem; padding: 2px 6px;">IRCTC Ready</span>
+                                </div>
+                                <div class="textarea-format-pills">
+                                    <button type="button" class="format-pill active" id="dash-pill-full" onclick="switchTextareaFormat('dash', 'full')">Detailed</button>
+                                    <button type="button" class="format-pill" id="dash-pill-row" onclick="switchTextareaFormat('dash', 'row')">CSV / Row</button>
+                                    <button type="button" class="format-pill" id="dash-pill-irctc" onclick="switchTextareaFormat('dash', 'irctc')">Pipe / Quick</button>
+                                </div>
+                            </div>
+                            <textarea id="dash-passenger-textarea" class="passenger-details-textarea" readonly rows="5" placeholder="All passenger details (Name, Age, Gender, Berth, Meal, Concession) will appear here automatically when added..."></textarea>
+                            <div class="textarea-actions-bar">
+                                <span class="textarea-hint">Click text area to highlight • Copy into IRCTC</span>
+                                <div style="display: flex; gap: 6px;">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="selectTextarea('dash-passenger-textarea')">🔍 Select All</button>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="copyTextareaContent('dash-passenger-textarea')">📋 Copy Text Area</button>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -414,6 +440,29 @@
                     <!-- Rendered dynamically -->
                 </div>
 
+                <!-- Dedicated All Details Text Area for Passenger View -->
+                <div class="passenger-textarea-wrapper" id="view-textarea-wrapper" style="margin-bottom: 20px;">
+                    <div class="textarea-header-bar">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 0.88rem; font-weight: 600; color: #93c5fd;">📋 All Details Text Area</span>
+                            <span class="badge-tag badge-tag-green" style="font-size: 0.72rem; padding: 2px 6px;">Live Consolidated</span>
+                        </div>
+                        <div class="textarea-format-pills">
+                            <button type="button" class="format-pill active" id="view-pill-full" onclick="switchTextareaFormat('view', 'full')">Detailed</button>
+                            <button type="button" class="format-pill" id="view-pill-row" onclick="switchTextareaFormat('view', 'row')">CSV / Row</button>
+                            <button type="button" class="format-pill" id="view-pill-irctc" onclick="switchTextareaFormat('view', 'irctc')">Pipe / Quick</button>
+                        </div>
+                    </div>
+                    <textarea id="view-passenger-textarea" class="passenger-details-textarea" readonly rows="6" placeholder="All passenger details (Name, Age, Gender, Berth, Meal, Concession) will appear here automatically when added..."></textarea>
+                    <div class="textarea-actions-bar">
+                        <span class="textarea-hint">Consolidated for easy reference or manual copy into IRCTC fields</span>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="selectTextarea('view-passenger-textarea')">🔍 Select All</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="copyTextareaContent('view-passenger-textarea')">📋 Copy Text Area</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Add Passenger Form -->
                 <div id="view-add-passenger-panel" style="background: rgba(11, 15, 25, 0.4); padding: 18px; border-radius: var(--radius-md); border: 1px dashed var(--border-subtle); margin-top: 16px;">
                     <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: #93c5fd;">+ Add New Passenger</h3>
@@ -460,9 +509,15 @@
                                     <option value="Jain">Jain</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 6px;">
-                                <button type="submit" class="btn btn-primary btn-block">Add Passenger</button>
+                            <div class="form-group" style="display: flex; flex-direction: column; justify-content: center; padding-top: 14px;">
+                                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #cbd5e1; font-size: 0.86rem; margin-bottom: 0;">
+                                    <input type="checkbox" id="view-passenger-senior" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
+                                    <span>Senior Citizen Concession (60+ M / 58+ F)</span>
+                                </label>
                             </div>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <button type="submit" class="btn btn-primary btn-block">Add Passenger</button>
                         </div>
                     </form>
                 </div>
