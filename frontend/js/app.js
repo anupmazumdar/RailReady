@@ -1,15 +1,15 @@
-// Application State
-let activeJourney = null;
-let openingTimeIso = null;
-let countdownInterval = null;
-let notifiedMilestones = new Set();
-let currentView = "dashboard";
-let lastSearchResults = [];
-let currentSearchCategory = "ALL";
-let jpAutoDiscoveredTrains = [];
-let currentJpCategory = "ALL";
-let preparedPassengers = [];
-let textareaFormats = { dash: "full", view: "full" };
+// RailReady Core Application Engine
+let activeJourney = null, openingTimeIso = null, countdownInterval = null;
+let notifiedMilestones = new Set(), currentView = "dashboard";
+let lastSearchResults = [], currentSearchCategory = "ALL";
+let jpAutoDiscoveredTrains = [], currentJpCategory = "ALL";
+let preparedPassengers = [], textareaFormats = { dash: "full", view: "full" };
+
+// DOM Query Shortcuts & Event Binding
+const $ = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+const on = (id, evt, fn) => $(id)?.addEventListener(evt, fn);
+const pad = v => String(v).padStart(2, "0");
 
 // Initialize on DOM Load
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,311 +25,130 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Setup Stations Datalist
 function initStationDatalist() {
-    const dataList = document.getElementById("station-list");
+    const dataList = $("station-list");
     if (!dataList || typeof MAJOR_STATIONS === "undefined") return;
-    
-    dataList.innerHTML = MAJOR_STATIONS.map(st => 
-        `<option value="${st.code} - ${st.name}">`
-    ).join("");
+    dataList.innerHTML = MAJOR_STATIONS.map(st => `<option value="${st.code} - ${st.name}">`).join("");
 }
 
 // Default Journey Dates to Tomorrow
 function setDefaultDates() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const yyyy = tomorrow.getFullYear();
-    const mm = String(tomorrow.getMonth() + 1).padStart(2, "0");
-    const dd = String(tomorrow.getDate()).padStart(2, "0");
-    const formatted = `${yyyy}-${mm}-${dd}`;
-
-    const searchDate = document.getElementById("search-input-date");
-    const jpDate = document.getElementById("jp-journey-date");
-    if (searchDate) {
-        searchDate.value = formatted;
-        searchDate.min = formatted;
-    }
-    if (jpDate) {
-        jpDate.value = formatted;
-        jpDate.min = formatted;
-    }
+    const formatted = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
+    ["search-input-date", "jp-journey-date"].forEach(id => {
+        const el = $(id);
+        if (el) { el.value = formatted; el.min = formatted; }
+    });
 }
 
 // View Navigation Switcher
 window.switchView = function(viewName) {
     currentView = viewName;
-
-    // Update Tabs
-    document.querySelectorAll(".nav-tab").forEach(tab => {
-        if (tab.getAttribute("data-view") === viewName) {
-            tab.classList.add("active");
-            // Auto scroll the selected tab into view smoothly
-            try {
-                tab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-            } catch (e) {
-                // fallback if scrollIntoView options unsupported
-            }
-        } else {
-            tab.classList.remove("active");
+    $$(".nav-tab").forEach(tab => {
+        const active = tab.getAttribute("data-view") === viewName;
+        tab.classList.toggle("active", active);
+        if (active) {
+            try { tab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); } catch (e) {}
         }
     });
-
-    // Update Panels
-    document.querySelectorAll(".view-panel").forEach(panel => {
-        if (panel.id === `view-${viewName}`) {
-            panel.classList.add("active");
-        } else {
-            panel.classList.remove("active");
-        }
-    });
-
+    $$(".view-panel").forEach(p => p.classList.toggle("active", p.id === `view-${viewName}`));
     window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 function setupNavigation() {
-    const mainNav = document.getElementById("main-nav");
-    const scrollLeftBtn = document.getElementById("nav-scroll-left");
-    const scrollRightBtn = document.getElementById("nav-scroll-right");
-
-    document.querySelectorAll(".nav-tab").forEach(tab => {
-        tab.addEventListener("click", () => {
-            const targetView = tab.getAttribute("data-view");
-            if (targetView) switchView(targetView);
-        });
-    });
-
-    // Mouse wheel horizontal scrolling over navbar
-    if (mainNav) {
-        mainNav.addEventListener("wheel", (evt) => {
-            if (evt.deltaY !== 0) {
-                evt.preventDefault();
-                mainNav.scrollLeft += evt.deltaY;
-            }
-        }, { passive: false });
-    }
-
-    // Scroll Arrow Controls
-    if (scrollLeftBtn && mainNav) {
-        scrollLeftBtn.addEventListener("click", () => {
-            mainNav.scrollBy({ left: -220, behavior: "smooth" });
-        });
-    }
-
-    if (scrollRightBtn && mainNav) {
-        scrollRightBtn.addEventListener("click", () => {
-            mainNav.scrollBy({ left: 220, behavior: "smooth" });
-        });
-    }
-
-    // Update arrow states based on scroll position
-    function updateNavScrollButtons() {
-        if (!mainNav || !scrollLeftBtn || !scrollRightBtn) return;
-        const isOverflowing = mainNav.scrollWidth > mainNav.clientWidth + 2;
-        if (!isOverflowing) {
-            scrollLeftBtn.style.opacity = "0.3";
-            scrollLeftBtn.disabled = true;
-            scrollRightBtn.style.opacity = "0.3";
-            scrollRightBtn.disabled = true;
-            return;
-        }
-        scrollLeftBtn.disabled = mainNav.scrollLeft <= 5;
-        scrollRightBtn.disabled = (mainNav.scrollLeft + mainNav.clientWidth) >= (mainNav.scrollWidth - 5);
-        scrollLeftBtn.style.opacity = scrollLeftBtn.disabled ? "0.3" : "1";
-        scrollRightBtn.style.opacity = scrollRightBtn.disabled ? "0.3" : "1";
-    }
+    const mainNav = $("main-nav"), sLeft = $("nav-scroll-left"), sRight = $("nav-scroll-right");
+    $$(".nav-tab").forEach(tab => tab.addEventListener("click", () => switchView(tab.getAttribute("data-view"))));
 
     if (mainNav) {
-        mainNav.addEventListener("scroll", updateNavScrollButtons);
-        window.addEventListener("resize", updateNavScrollButtons);
-        setTimeout(updateNavScrollButtons, 150);
+        mainNav.addEventListener("wheel", e => { if (e.deltaY) { e.preventDefault(); mainNav.scrollLeft += e.deltaY; } }, { passive: false });
+        sLeft?.addEventListener("click", () => mainNav.scrollBy({ left: -220, behavior: "smooth" }));
+        sRight?.addEventListener("click", () => mainNav.scrollBy({ left: 220, behavior: "smooth" }));
+
+        const updateArrows = () => {
+            if (!sLeft || !sRight) return;
+            const overflow = mainNav.scrollWidth > mainNav.clientWidth + 2;
+            sLeft.disabled = !overflow || mainNav.scrollLeft <= 5;
+            sRight.disabled = !overflow || (mainNav.scrollLeft + mainNav.clientWidth) >= (mainNav.scrollWidth - 5);
+            sLeft.style.opacity = sLeft.disabled ? "0.3" : "1";
+            sRight.style.opacity = sRight.disabled ? "0.3" : "1";
+        };
+        mainNav.addEventListener("scroll", updateArrows);
+        window.addEventListener("resize", updateArrows);
+        setTimeout(updateArrows, 150);
     }
 }
 
 // Setup Event Listeners
 function setupEventListeners() {
-    // Search View
-    const btnSearch = document.getElementById("btn-execute-search");
-    if (btnSearch) btnSearch.addEventListener("click", handleTrainSearch);
+    on("btn-execute-search", "click", handleTrainSearch);
 
-    // Category Filter Pills - Train Search
-    document.querySelectorAll("#search-category-filters .category-pill").forEach(pill => {
-        pill.addEventListener("click", () => {
-            document.querySelectorAll("#search-category-filters .category-pill").forEach(p => p.classList.remove("active"));
-            pill.classList.add("active");
-            currentSearchCategory = pill.getAttribute("data-cat") || "ALL";
-            renderSearchResults();
+    // Filter pill setup helper
+    const setupPills = (containerId, cb) => {
+        $$(containerId + " .category-pill").forEach(pill => {
+            pill.addEventListener("click", () => {
+                $$(containerId + " .category-pill").forEach(p => p.classList.remove("active"));
+                pill.classList.add("active");
+                cb(pill.getAttribute("data-cat") || "ALL");
+            });
         });
+    };
+    setupPills("#search-category-filters", cat => { currentSearchCategory = cat; renderSearchResults(); });
+    setupPills("#jp-category-filters", cat => { currentJpCategory = cat; renderJpAutoTrains(); });
+
+    // Route inputs debouncer helper
+    const attachRouteDebounce = (fromId, toId, cb) => {
+        let timer;
+        const handler = () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                const f = $(fromId)?.value.trim(), t = $(toId)?.value.trim();
+                if (f && t && f.length >= 2 && t.length >= 2) cb(f, t);
+            }, 350);
+        };
+        [fromId, toId].forEach(id => {
+            const el = $(id);
+            if (el) { el.addEventListener("input", handler); el.addEventListener("change", handler); }
+        });
+    };
+
+    attachRouteDebounce("jp-from-station", "jp-to-station", (f, t) => autoDiscoverJourneyTrains(f, t, true));
+    attachRouteDebounce("search-input-from", "search-input-to", () => handleTrainSearch());
+
+    on("btn-jp-auto-assign-top3", "click", () => assignTop3TrainsToJourneySlots(true));
+    on("btn-load-details", "click", () => { const v = $("details-train-input")?.value.trim(); if (v) loadTrainDetails(v); });
+    on("btn-load-running-status", "click", () => { const v = $("status-train-input")?.value.trim(); if (v) loadRunningStatus(v); });
+    on("btn-load-timeline", "click", () => { const v = $("timeline-train-input")?.value.trim(); if (v) loadRouteTimeline(v); });
+
+    on("form-journey-main", "submit", handleJourneyPlannerSubmit);
+    on("form-view-add-passenger", "submit", handlePassengerSubmit);
+    on("btn-dash-copy-passengers", "click", copyAllPassengerDetails);
+    on("btn-view-copy-all-passengers", "click", copyAllPassengerDetails);
+
+    // Textarea click-to-select
+    ["dash-passenger-textarea", "view-passenger-textarea"].forEach(id => {
+        $(id)?.addEventListener("click", function() { this.select(); });
     });
 
-    // Category Filter Pills - Journey Planner
-    document.querySelectorAll("#jp-category-filters .category-pill").forEach(pill => {
-        pill.addEventListener("click", () => {
-            document.querySelectorAll("#jp-category-filters .category-pill").forEach(p => p.classList.remove("active"));
-            pill.classList.add("active");
-            currentJpCategory = pill.getAttribute("data-cat") || "ALL";
-            renderJpAutoTrains();
-        });
+    on("btn-tatkal-reset-checklist", "click", resetChecklist);
+    on("btn-clear-all-passengers", "click", async () => {
+        if (confirm("Clear all prepared passenger records?")) {
+            await fetch("/api/passengers", { method: "DELETE" });
+            loadPassengers();
+            showToast("🗑️ Passenger records cleared.");
+        }
     });
 
-    // Instant Route Auto-Discovery in Journey Planner
-    const jpFrom = document.getElementById("jp-from-station");
-    const jpTo = document.getElementById("jp-to-station");
-    let jpDebounceTimer = null;
-    function onJpStationChange() {
-        clearTimeout(jpDebounceTimer);
-        jpDebounceTimer = setTimeout(() => {
-            const from = (jpFrom?.value || "").trim();
-            const to = (jpTo?.value || "").trim();
-            if (from && to && from.length >= 2 && to.length >= 2) {
-                autoDiscoverJourneyTrains(from, to, true);
-            }
-        }, 350);
-    }
-    if (jpFrom) {
-        jpFrom.addEventListener("input", onJpStationChange);
-        jpFrom.addEventListener("change", onJpStationChange);
-    }
-    if (jpTo) {
-        jpTo.addEventListener("input", onJpStationChange);
-        jpTo.addEventListener("change", onJpStationChange);
-    }
+    on("btn-test-chime-view", "click", () => { playAlertChime(); showToast("🔔 Test chime played!"); });
+    on("btn-test-notification-view", "click", () => { triggerNotification("RailReady Alert", "Test notification."); showToast("🔔 Notification sent!"); });
 
-    // Auto-Assign Top 3 Trains Button in Journey Planner
-    const btnAutoAssign = document.getElementById("btn-jp-auto-assign-top3");
-    if (btnAutoAssign) {
-        btnAutoAssign.addEventListener("click", () => {
-            assignTop3TrainsToJourneySlots(true);
-        });
-    }
-
-    // Instant Route Auto-Search in Train Search View
-    const searchFrom = document.getElementById("search-input-from");
-    const searchTo = document.getElementById("search-input-to");
-    let searchDebounceTimer = null;
-    function onSearchStationChange() {
-        clearTimeout(searchDebounceTimer);
-        searchDebounceTimer = setTimeout(() => {
-            if (searchFrom?.value.trim() && searchTo?.value.trim()) {
-                handleTrainSearch();
-            }
-        }, 350);
-    }
-    if (searchFrom) {
-        searchFrom.addEventListener("input", onSearchStationChange);
-        searchFrom.addEventListener("change", onSearchStationChange);
-    }
-    if (searchTo) {
-        searchTo.addEventListener("input", onSearchStationChange);
-        searchTo.addEventListener("change", onSearchStationChange);
-    }
-
-    // Details View
-    const btnLoadDetails = document.getElementById("btn-load-details");
-    if (btnLoadDetails) {
-        btnLoadDetails.addEventListener("click", () => {
-            const trainNo = document.getElementById("details-train-input").value.trim();
-            if (trainNo) loadTrainDetails(trainNo);
-        });
-    }
-
-    // Running Status View
-    const btnLoadStatus = document.getElementById("btn-load-running-status");
-    if (btnLoadStatus) {
-        btnLoadStatus.addEventListener("click", () => {
-            const trainNo = document.getElementById("status-train-input").value.trim();
-            if (trainNo) loadRunningStatus(trainNo);
-        });
-    }
-
-    // Timeline View
-    const btnLoadTimeline = document.getElementById("btn-load-timeline");
-    if (btnLoadTimeline) {
-        btnLoadTimeline.addEventListener("click", () => {
-            const trainNo = document.getElementById("timeline-train-input").value.trim();
-            if (trainNo) loadRouteTimeline(trainNo);
-        });
-    }
-
-    // Journey Planner Form
-    const jpForm = document.getElementById("form-journey-main");
-    if (jpForm) jpForm.addEventListener("submit", handleJourneyPlannerSubmit);
-
-    // Passenger Forms
-    const viewPassengerForm = document.getElementById("form-view-add-passenger");
-    if (viewPassengerForm) viewPassengerForm.addEventListener("submit", handlePassengerSubmit);
-
-    // Copy Passenger Buttons
-    const btnDashCopy = document.getElementById("btn-dash-copy-passengers");
-    if (btnDashCopy) btnDashCopy.addEventListener("click", copyAllPassengerDetails);
-
-    const btnViewCopy = document.getElementById("btn-view-copy-all-passengers");
-    if (btnViewCopy) btnViewCopy.addEventListener("click", copyAllPassengerDetails);
-
-    // Auto-select text on click for passenger textareas
-    const dashTa = document.getElementById("dash-passenger-textarea");
-    if (dashTa) {
-        dashTa.addEventListener("click", () => dashTa.select());
-    }
-    const viewTa = document.getElementById("view-passenger-textarea");
-    if (viewTa) {
-        viewTa.addEventListener("click", () => viewTa.select());
-    }
-
-    // Checklist Reset
-    const btnTatkalReset = document.getElementById("btn-tatkal-reset-checklist");
-    if (btnTatkalReset) btnTatkalReset.addEventListener("click", resetChecklist);
-
-    // Clear Passenger Data in Settings
-    const btnClearPassengers = document.getElementById("btn-clear-all-passengers");
-    if (btnClearPassengers) {
-        btnClearPassengers.addEventListener("click", async () => {
-            if (confirm("Clear all prepared passenger records?")) {
-                await fetch("/api/passengers", { method: "DELETE" });
-                loadPassengers();
-                showToast("🗑️ Passenger records cleared.");
-            }
-        });
-    }
-
-    // Notifications View Buttons
-    const btnChime = document.getElementById("btn-test-chime-view");
-    if (btnChime) {
-        btnChime.addEventListener("click", () => {
-            playAlertChime();
-            showToast("🔔 Test chime played successfully!");
-        });
-    }
-
-    const btnNotif = document.getElementById("btn-test-notification-view");
-    if (btnNotif) {
-        btnNotif.addEventListener("click", () => {
-            triggerNotification("RailReady Alert", "Test notification triggered from RailReady.");
-            showToast("🔔 Notification triggered!");
-        });
-    }
-
-    // Manual IRCTC Modal Listeners
-    const manualIrctcBtn = document.getElementById("btn-manual-irctc");
-    const tatkalModalBtn = document.getElementById("btn-tatkal-manual-modal");
-    const modal = document.getElementById("modal-irctc-guide");
-    const closeModalBtn = document.getElementById("btn-close-modal");
-    const modalDoneBtn = document.getElementById("btn-modal-done");
-    const copyUrlBtn = document.getElementById("btn-copy-url");
-
-    if (manualIrctcBtn) manualIrctcBtn.addEventListener("click", () => modal.classList.add("active"));
-    if (tatkalModalBtn) tatkalModalBtn.addEventListener("click", () => modal.classList.add("active"));
-    if (closeModalBtn) closeModalBtn.addEventListener("click", () => modal.classList.remove("active"));
-    if (modalDoneBtn) modalDoneBtn.addEventListener("click", () => modal.classList.remove("active"));
-    if (modal) {
-        modal.addEventListener("click", (e) => {
-            if (e.target === modal) modal.classList.remove("active");
-        });
-    }
-    if (copyUrlBtn) {
-        copyUrlBtn.addEventListener("click", () => {
-            copyToClipboard("https://www.irctc.co.in/");
-            showToast("🌐 IRCTC URL copied to clipboard!");
-        });
-    }
+    // Modal
+    const modal = $("modal-irctc-guide");
+    on("btn-manual-irctc", "click", () => modal?.classList.add("active"));
+    on("btn-tatkal-manual-modal", "click", () => modal?.classList.add("active"));
+    on("btn-close-modal", "click", () => modal?.classList.remove("active"));
+    on("btn-modal-done", "click", () => modal?.classList.remove("active"));
+    modal?.addEventListener("click", e => { if (e.target === modal) modal.classList.remove("active"); });
+    on("btn-copy-url", "click", () => { copyToClipboard("https://www.irctc.co.in/"); showToast("🌐 IRCTC URL copied!"); });
 }
 
 // Fetch System Status & IST Clock
@@ -338,93 +157,84 @@ async function fetchSystemStatus() {
         const res = await fetch("/api/status");
         if (!res.ok) return;
         const data = await res.json();
-        const timeDisplay = document.getElementById("current-ist-time");
-        if (timeDisplay && data.current_time_ist) {
-            timeDisplay.textContent = data.current_time_ist;
-        }
-    } catch (err) {
-        console.error("Status fetch error:", err);
-    }
+        const timeEl = $("current-ist-time");
+        if (timeEl) timeEl.textContent = data.current_time_ist || "Online (IST)";
+        setInterval(() => {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const ist = new Date(utc + (3600000 * 5.5));
+            if (timeEl) timeEl.textContent = `${ist.getFullYear()}-${pad(ist.getMonth() + 1)}-${pad(ist.getDate())} ${pad(ist.getHours())}:${pad(ist.getMinutes())}:${pad(ist.getSeconds())} IST`;
+        }, 1000);
+    } catch (e) {}
 }
 
-// ================= TRAIN CATEGORY HELPERS =================
-function getCategoryBadge(trainType) {
-    const t = (trainType || "").toLowerCase();
-    if (t === "rajdhani") {
-        return `<span class="badge-category badge-category-rajdhani">👑 Rajdhani</span>`;
-    } else if (t === "special") {
-        return `<span class="badge-category badge-category-special">⭐ Special</span>`;
-    } else if (t.includes("mail") || t.includes("express") || t.includes("superfast")) {
-        return `<span class="badge-category badge-category-mail">⚡ Mail / Express</span>`;
-    } else if (t.includes("passenger") || t.includes("local") || t.includes("memu")) {
-        return `<span class="badge-category badge-category-passenger">🚉 Passenger</span>`;
-    } else if (t.includes("shatabdi") || t.includes("vande")) {
-        return `<span class="badge-category badge-category-mail">🚄 ${escapeHtml(trainType)}</span>`;
-    }
-    return `<span class="badge-tag badge-tag-blue">${escapeHtml(trainType)}</span>`;
+// Category Badge Helper
+function getCategoryBadge(tType) {
+    const t = (tType || "").toLowerCase();
+    if (t.includes("rajdhani")) return `<span class="badge-category badge-category-rajdhani">👑 Rajdhani</span>`;
+    if (t.includes("special")) return `<span class="badge-category badge-category-special">⭐ Special</span>`;
+    if (t.includes("mail") || t.includes("express") || t.includes("superfast")) return `<span class="badge-category badge-category-mail">⚡ Mail / Express</span>`;
+    if (t.includes("passenger") || t.includes("local") || t.includes("memu")) return `<span class="badge-category badge-category-passenger">🚉 Passenger / Local</span>`;
+    return `<span class="badge-tag badge-tag-blue">${escapeHtml(tType)}</span>`;
 }
 
-function matchesCategory(trainType, category) {
+function matchesCategory(tType, category) {
     if (!category || category === "ALL") return true;
-    const t = (trainType || "").toLowerCase();
-    if (category === "Rajdhani") return t === "rajdhani";
-    if (category === "Special") return t === "special";
+    const t = (tType || "").toLowerCase();
+    if (category === "Rajdhani") return t.includes("rajdhani");
+    if (category === "Special") return t.includes("special");
     if (category === "Mail/Express") return t.includes("mail") || t.includes("express") || t.includes("superfast");
     if (category === "Passenger") return t.includes("passenger") || t.includes("local") || t.includes("memu");
     return true;
 }
 
+function updateCategoryCounts(prefix, trains) {
+    const set = (id, n) => { const el = $(`${prefix}-cat-count-${id}`); if (el) el.textContent = n; };
+    set("all", trains.length);
+    set("raj", trains.filter(t => matchesCategory(t.train_type, "Rajdhani")).length);
+    set("spec", trains.filter(t => matchesCategory(t.train_type, "Special")).length);
+    set("mail", trains.filter(t => matchesCategory(t.train_type, "Mail/Express")).length);
+    set("pass", trains.filter(t => matchesCategory(t.train_type, "Passenger")).length);
+}
+
 // ================= TRAIN INFORMATION & SEARCH =================
 async function handleTrainSearch() {
-    const query = document.getElementById("search-input-query").value.trim();
-    const fromStation = document.getElementById("search-input-from").value.trim();
-    const toStation = document.getElementById("search-input-to").value.trim();
-    const date = document.getElementById("search-input-date").value;
+    const q = $("search-input-query")?.value.trim() || "";
+    const from = $("search-input-from")?.value.trim() || "";
+    const to = $("search-input-to")?.value.trim() || "";
+    const date = $("search-input-date")?.value || "";
 
     const params = new URLSearchParams();
-    if (query) params.append("query", query);
-    if (fromStation) params.append("from_station", fromStation);
-    if (toStation) params.append("to_station", toStation);
+    if (q) params.append("query", q);
+    if (from) params.append("from_station", from);
+    if (to) params.append("to_station", to);
     if (date) params.append("journey_date", date);
 
     showToast("🔍 Searching train database...");
-    const container = document.getElementById("search-results-container");
+    const container = $("search-results-container");
 
     try {
         const res = await fetch(`/api/trains/search?${params.toString()}`);
         if (!res.ok) throw new Error("Search failed");
         const trains = await res.json();
         lastSearchResults = trains;
-
-        // Update counts on filter pills
-        const elAll = document.getElementById("search-cat-count-all");
-        const elRaj = document.getElementById("search-cat-count-raj");
-        const elSpec = document.getElementById("search-cat-count-spec");
-        const elMail = document.getElementById("search-cat-count-mail");
-        const elPass = document.getElementById("search-cat-count-pass");
-
-        if (elAll) elAll.textContent = trains.length;
-        if (elRaj) elRaj.textContent = trains.filter(t => matchesCategory(t.train_type, "Rajdhani")).length;
-        if (elSpec) elSpec.textContent = trains.filter(t => matchesCategory(t.train_type, "Special")).length;
-        if (elMail) elMail.textContent = trains.filter(t => matchesCategory(t.train_type, "Mail/Express")).length;
-        if (elPass) elPass.textContent = trains.filter(t => matchesCategory(t.train_type, "Passenger")).length;
-
+        updateCategoryCounts("search", trains);
         renderSearchResults();
         showToast(`✅ Found ${trains.length} trains!`);
     } catch (err) {
-        container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Error searching trains. Please check your inputs.</div>`;
+        if (container) container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">Error searching trains. Please check inputs.</div>`;
     }
 }
 
 function renderSearchResults() {
-    const container = document.getElementById("search-results-container");
-    const countEl = document.getElementById("search-count");
+    const container = $("search-results-container");
+    const countEl = $("search-count");
     if (!container) return;
 
     const filtered = lastSearchResults.filter(t => matchesCategory(t.train_type, currentSearchCategory));
     if (countEl) countEl.textContent = filtered.length;
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
         container.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 24px;">No matching trains found in category '${currentSearchCategory}'.</div>`;
         return;
     }
@@ -442,40 +252,18 @@ function renderSearchResults() {
                     <span class="badge-tag badge-tag-green">${t.running_days.join(" ")}</span>
                 </div>
             </div>
-
             <div class="train-route-visual">
-                <div class="route-stop-point">
-                    <div class="route-stop-time">${t.departure_time}</div>
-                    <div class="route-stop-station">${t.source_name} (${t.source_code})</div>
-                </div>
-                <div class="route-duration-line">
-                    <span class="route-duration-text">${t.duration}</span>
-                </div>
-                <div class="route-stop-point">
-                    <div class="route-stop-time">${t.arrival_time}</div>
-                    <div class="route-stop-station">${t.dest_name} (${t.dest_code})</div>
-                </div>
+                <div class="route-stop-point"><div class="route-stop-time">${t.departure_time}</div><div class="route-stop-station">${t.source_name} (${t.source_code})</div></div>
+                <div class="route-duration-line"><span class="route-duration-text">${t.duration}</span></div>
+                <div class="route-stop-point"><div class="route-stop-time">${t.arrival_time}</div><div class="route-stop-station">${t.dest_name} (${t.dest_code})</div></div>
             </div>
-
             <div class="train-card-actions">
-                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')">
-                    📌 Set as Primary
-                </button>
-                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')">
-                    🔄 Set as Alt 1
-                </button>
-                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')">
-                    🔄 Set as Alt 2
-                </button>
-                <button class="btn btn-primary btn-sm" onclick="viewTrainDetailsTab('${t.train_number}')">
-                    🚆 Details
-                </button>
-                <button class="btn btn-secondary btn-sm" onclick="viewRunningStatusTab('${t.train_number}')">
-                    📍 Live Status
-                </button>
-                <button class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')">
-                    🗺️ Route
-                </button>
+                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')">📌 Set as Primary</button>
+                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')">🔄 Set as Alt 1</button>
+                <button class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')">🔄 Set as Alt 2</button>
+                <button class="btn btn-primary btn-sm" onclick="viewTrainDetailsTab('${t.train_number}')">🚆 Details</button>
+                <button class="btn btn-secondary btn-sm" onclick="viewRunningStatusTab('${t.train_number}')">📍 Live Status</button>
+                <button class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')">🗺️ Route</button>
             </div>
         </div>
     `).join("");
@@ -483,65 +271,45 @@ function renderSearchResults() {
 
 // ================= JOURNEY PLANNER AUTO-DISCOVERY =================
 async function autoDiscoverJourneyTrains(fromStation, toStation, autoPopulateIfEmpty = false) {
-    const listContainer = document.getElementById("jp-auto-trains-list");
+    const listContainer = $("jp-auto-trains-list");
     if (!listContainer) return;
-    listContainer.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px;">⚡ Automatically discovering Special, Rajdhani, Mail/Express, and Passenger trains on this route...</div>`;
+    listContainer.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px;">⚡ Automatically discovering Special, Rajdhani, Mail/Express, and Passenger trains...</div>`;
 
-    const params = new URLSearchParams();
-    params.append("from_station", fromStation);
-    params.append("to_station", toStation);
-
+    const params = new URLSearchParams({ from_station: fromStation, to_station: toStation });
     try {
         const res = await fetch(`/api/trains/search?${params.toString()}`);
         if (!res.ok) throw new Error("Search failed");
         const trains = await res.json();
         jpAutoDiscoveredTrains = trains;
-
-        // Update counts
-        const elAll = document.getElementById("jp-cat-count-all");
-        const elRaj = document.getElementById("jp-cat-count-raj");
-        const elSpec = document.getElementById("jp-cat-count-spec");
-        const elMail = document.getElementById("jp-cat-count-mail");
-        const elPass = document.getElementById("jp-cat-count-pass");
-
-        if (elAll) elAll.textContent = trains.length;
-        if (elRaj) elRaj.textContent = trains.filter(t => matchesCategory(t.train_type, "Rajdhani")).length;
-        if (elSpec) elSpec.textContent = trains.filter(t => matchesCategory(t.train_type, "Special")).length;
-        if (elMail) elMail.textContent = trains.filter(t => matchesCategory(t.train_type, "Mail/Express")).length;
-        if (elPass) elPass.textContent = trains.filter(t => matchesCategory(t.train_type, "Passenger")).length;
-
+        updateCategoryCounts("jp", trains);
         renderJpAutoTrains();
 
-        // If primary train input is currently empty, auto-assign top 3 trains!
-        const primaryInput = document.getElementById("jp-primary-train");
-        if (autoPopulateIfEmpty && primaryInput && !primaryInput.value && trains.length > 0) {
+        const pInput = $("jp-primary-train");
+        if (autoPopulateIfEmpty && pInput && !pInput.value && trains.length) {
             assignTop3TrainsToJourneySlots(false);
         }
     } catch (err) {
-        listContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 14px;">Could not discover trains for route. Please verify station names.</div>`;
+        listContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 14px;">Could not discover trains for route.</div>`;
     }
 }
 
 function renderJpAutoTrains() {
-    const listContainer = document.getElementById("jp-auto-trains-list");
-    if (!listContainer) return;
+    const list = $("jp-auto-trains-list");
+    if (!list) return;
 
-    const primaryVal = (document.getElementById("jp-primary-train")?.value || "").trim();
-    const alt1Val = (document.getElementById("jp-alt1-train")?.value || "").trim();
-    const alt2Val = (document.getElementById("jp-alt2-train")?.value || "").trim();
-
+    const pVal = $("jp-primary-train")?.value || "", a1Val = $("jp-alt1-train")?.value || "", a2Val = $("jp-alt2-train")?.value || "";
     const filtered = jpAutoDiscoveredTrains.filter(t => matchesCategory(t.train_type, currentJpCategory));
 
-    if (filtered.length === 0) {
-        listContainer.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px;">No trains found for category '${currentJpCategory}'.</div>`;
+    if (!filtered.length) {
+        list.innerHTML = `<div style="text-align: center; color: var(--text-dim); padding: 16px;">No trains found for '${currentJpCategory}'.</div>`;
         return;
     }
 
-    listContainer.innerHTML = filtered.map(t => {
+    list.innerHTML = filtered.map(t => {
         let assignedSlot = null;
-        if (primaryVal.includes(t.train_number)) assignedSlot = "PRIMARY";
-        else if (alt1Val.includes(t.train_number)) assignedSlot = "ALT 1";
-        else if (alt2Val.includes(t.train_number)) assignedSlot = "ALT 2";
+        if (pVal.includes(t.train_number)) assignedSlot = "PRIMARY";
+        else if (a1Val.includes(t.train_number)) assignedSlot = "ALT 1";
+        else if (a2Val.includes(t.train_number)) assignedSlot = "ALT 2";
 
         return `
             <div class="auto-train-card ${assignedSlot ? 'is-assigned' : ''}" id="auto-train-${t.train_number}">
@@ -552,27 +320,15 @@ function renderJpAutoTrains() {
                         ${assignedSlot ? `<span class="badge-tag badge-tag-green" style="font-weight: 700;">✓ ASSIGNED AS ${assignedSlot}</span>` : ''}
                     </div>
                     <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 12px; flex-wrap: wrap;">
-                        <span>Dep: <strong>${t.departure_time}</strong> (${t.source_code})</span>
-                        <span>➔</span>
-                        <span>Arr: <strong>${t.arrival_time}</strong> (${t.dest_code})</span>
-                        <span>⏱️ ${t.duration}</span>
-                        <span>Classes: <strong>${t.classes.join(", ")}</strong></span>
+                        <span>Dep: <strong>${t.departure_time}</strong> (${t.source_code})</span>➔<span>Arr: <strong>${t.arrival_time}</strong> (${t.dest_code})</span>
+                        <span>⏱️ ${t.duration}</span><span>Classes: <strong>${t.classes.join(", ")}</strong></span>
                     </div>
                 </div>
-
                 <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')" title="Set as Primary Train">
-                        📌 Primary
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')" title="Set as Alternative 1">
-                        🔁 Alt 1
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')" title="Set as Alternative 2">
-                        🔀 Alt 2
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')" title="View Route Timeline">
-                        🗺️ Route
-                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY')">📌 Primary</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT1')">🔁 Alt 1</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'ALT2')">🔀 Alt 2</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="viewRouteTimelineTab('${t.train_number}')">🗺️ Route</button>
                 </div>
             </div>
         `;
@@ -580,377 +336,191 @@ function renderJpAutoTrains() {
 }
 
 function assignTop3TrainsToJourneySlots(showToastMsg = true) {
-    if (!jpAutoDiscoveredTrains || jpAutoDiscoveredTrains.length === 0) {
-        if (showToastMsg) showToast("⚠️ Please enter route details (From & To station) first.");
+    if (!jpAutoDiscoveredTrains?.length) {
+        if (showToastMsg) showToast("⚠️ Enter From & To stations first.");
         return;
     }
+    const raj = jpAutoDiscoveredTrains.find(t => t.train_type === "Rajdhani");
+    const spec = jpAutoDiscoveredTrains.find(t => t.train_type === "Special");
+    const mail = jpAutoDiscoveredTrains.find(t => ["Mail/Express", "Superfast"].includes(t.train_type));
+    const pass = jpAutoDiscoveredTrains.find(t => ["Passenger", "Local"].includes(t.train_type));
 
-    const rajdhani = jpAutoDiscoveredTrains.find(t => t.train_type === "Rajdhani");
-    const special = jpAutoDiscoveredTrains.find(t => t.train_type === "Special");
-    const mailExp = jpAutoDiscoveredTrains.find(t => t.train_type === "Mail/Express" || t.train_type === "Superfast");
-    const pass = jpAutoDiscoveredTrains.find(t => t.train_type === "Passenger" || t.train_type === "Local");
+    const p = raj || jpAutoDiscoveredTrains[0];
+    const a1 = spec || jpAutoDiscoveredTrains.find(t => t.train_number !== p.train_number);
+    const a2 = mail || pass || jpAutoDiscoveredTrains.find(t => t.train_number !== p.train_number && (!a1 || t.train_number !== a1.train_number));
 
-    const primary = rajdhani || jpAutoDiscoveredTrains[0];
-    const alt1 = special || jpAutoDiscoveredTrains.find(t => t.train_number !== primary.train_number);
-    const alt2 = mailExp || pass || jpAutoDiscoveredTrains.find(t => t.train_number !== primary.train_number && (!alt1 || t.train_number !== alt1.train_number));
-
-    const primaryInput = document.getElementById("jp-primary-train");
-    const alt1Input = document.getElementById("jp-alt1-train");
-    const alt2Input = document.getElementById("jp-alt2-train");
-
-    if (primary && primaryInput) primaryInput.value = `${primary.train_number} - ${primary.train_name}`;
-    if (alt1 && alt1Input) alt1Input.value = `${alt1.train_number} - ${alt1.train_name}`;
-    if (alt2 && alt2Input) alt2Input.value = `${alt2.train_number} - ${alt2.train_name}`;
+    const setInput = (id, train) => { if (train && $(id)) $(id).value = `${train.train_number} - ${train.train_name}`; };
+    setInput("jp-primary-train", p);
+    setInput("jp-alt1-train", a1);
+    setInput("jp-alt2-train", a2);
 
     renderJpAutoTrains();
-    if (showToastMsg) {
-        showToast("✨ Auto-assigned optimal Primary, Alt 1, and Alt 2 trains!");
-    }
+    if (showToastMsg) showToast("✨ Auto-assigned optimal Primary, Alt 1, and Alt 2 trains!");
 }
 
-// Quick Assign Train to Journey Planner Slots
-window.quickAssignTrain = function(number, name, src, dst, slot) {
-    const fullTrainStr = `${number} - ${name}`;
-    const primaryInput = document.getElementById("jp-primary-train");
-    const alt1Input = document.getElementById("jp-alt1-train");
-    const alt2Input = document.getElementById("jp-alt2-train");
-    const fromInput = document.getElementById("jp-from-station");
-    const toInput = document.getElementById("jp-to-station");
+window.quickAssignTrain = function(num, name, src, dst, slot) {
+    const full = `${num} - ${name}`;
+    const fIn = $("jp-from-station"), tIn = $("jp-to-station");
+    if (src && fIn && !fIn.value) fIn.value = src;
+    if (dst && tIn && !tIn.value) tIn.value = dst;
 
-    if (src && fromInput && !fromInput.value) fromInput.value = src;
-    if (dst && toInput && !toInput.value) toInput.value = dst;
-
-    if (slot === "PRIMARY") {
-        if (primaryInput) primaryInput.value = fullTrainStr;
-        showToast(`📌 Set ${number} as Primary Train in Journey Planner!`);
-    } else if (slot === "ALT1") {
-        if (alt1Input) alt1Input.value = fullTrainStr;
-        showToast(`🔄 Set ${number} as Alternative Train 1!`);
-    } else if (slot === "ALT2") {
-        if (alt2Input) alt2Input.value = fullTrainStr;
-        showToast(`🔄 Set ${number} as Alternative Train 2!`);
-    }
+    if (slot === "PRIMARY") { if ($("jp-primary-train")) $("jp-primary-train").value = full; showToast(`📌 Set ${num} as Primary Train!`); }
+    else if (slot === "ALT1") { if ($("jp-alt1-train")) $("jp-alt1-train").value = full; showToast(`🔄 Set ${num} as Alt 1!`); }
+    else if (slot === "ALT2") { if ($("jp-alt2-train")) $("jp-alt2-train").value = full; showToast(`🔄 Set ${num} as Alt 2!`); }
 
     renderJpAutoTrains();
 };
 
-// Open Train Details Tab & Load
-window.viewTrainDetailsTab = function(trainNumber) {
-    const input = document.getElementById("details-train-input");
-    if (input) input.value = trainNumber;
-    switchView("train-details");
-    loadTrainDetails(trainNumber);
-};
+window.viewTrainDetailsTab = function(num) { if ($("details-train-input")) $("details-train-input").value = num; switchView("train-details"); loadTrainDetails(num); };
+window.viewRunningStatusTab = function(num) { if ($("status-train-input")) $("status-train-input").value = num; switchView("running-status"); loadRunningStatus(num); };
+window.viewRouteTimelineTab = function(num) { if ($("timeline-train-input")) $("timeline-train-input").value = num; switchView("route-timeline"); loadRouteTimeline(num); };
 
-// Open Running Status Tab & Load
-window.viewRunningStatusTab = function(trainNumber) {
-    const input = document.getElementById("status-train-input");
-    if (input) input.value = trainNumber;
-    switchView("running-status");
-    loadRunningStatus(trainNumber);
-};
-
-// Open Route Timeline Tab & Load
-window.viewRouteTimelineTab = function(trainNumber) {
-    const input = document.getElementById("timeline-train-input");
-    if (input) input.value = trainNumber;
-    switchView("route-timeline");
-    loadRouteTimeline(trainNumber);
-};
-
-// Load Train Details
+// Load Details, Status, Timeline
 async function loadTrainDetails(trainNumber) {
-    const container = document.getElementById("train-details-content");
-    container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">Loading train details...</div>`;
-
+    const c = $("train-details-content");
+    if (c) c.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">Loading train details...</div>`;
     try {
         const res = await fetch(`/api/trains/${encodeURIComponent(trainNumber)}`);
-        if (!res.ok) throw new Error("Train not found");
+        if (!res.ok) throw new Error();
         const t = await res.json();
-
-        container.innerHTML = `
+        c.innerHTML = `
             <div style="background: rgba(11, 15, 25, 0.5); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div>
-                        <span class="train-tag" style="font-size: 1.2rem;">${t.train_number}</span>
-                        <h3 style="display: inline-block; font-size: 1.2rem; color: #fff; margin-left: 8px;">${escapeHtml(t.train_name)}</h3>
-                    </div>
-                    <div class="train-badge-group">
-                        <span class="badge-tag badge-tag-blue">${t.train_type}</span>
-                        <span class="badge-tag badge-tag-green">${t.pantry ? 'Pantry Car Available' : 'No Pantry'}</span>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div><span class="train-tag" style="font-size: 1.2rem;">${t.train_number}</span><h3 style="display: inline-block; font-size: 1.2rem; color: #fff; margin-left: 8px;">${escapeHtml(t.train_name)}</h3></div>
+                    <div class="train-badge-group"><span class="badge-tag badge-tag-blue">${t.train_type}</span><span class="badge-tag badge-tag-green">${t.pantry ? 'Pantry Car' : 'No Pantry'}</span></div>
                 </div>
-
                 <div class="form-row" style="margin-top: 14px; font-size: 0.9rem;">
                     <div><strong>Origin:</strong> ${t.source_name} (${t.source_code}) at ${t.departure_time}</div>
                     <div><strong>Destination:</strong> ${t.dest_name} (${t.dest_code}) at ${t.arrival_time}</div>
-                    <div><strong>Total Distance:</strong> ${t.total_distance_km} km</div>
-                    <div><strong>Total Duration:</strong> ${t.duration}</div>
-                    <div><strong>Running Days:</strong> ${t.running_days.join(", ")}</div>
-                    <div><strong>Available Classes:</strong> ${t.classes.join(", ")}</div>
+                    <div><strong>Distance:</strong> ${t.total_distance_km} km</div><div><strong>Duration:</strong> ${t.duration}</div>
+                    <div><strong>Days:</strong> ${t.running_days.join(", ")}</div><div><strong>Classes:</strong> ${t.classes.join(", ")}</div>
                 </div>
-
                 <div style="display: flex; gap: 10px; margin-top: 18px;">
-                    <button class="btn btn-primary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY'); switchView('journey-planner');">
-                        Use in Journey Planner
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="viewRunningStatusTab('${t.train_number}')">
-                        Track Live Running Status ➔
-                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="quickAssignTrain('${t.train_number}', '${escapeJs(t.train_name)}', '${t.source_code}', '${t.dest_code}', 'PRIMARY'); switchView('journey-planner');">Use in Journey Planner</button>
+                    <button class="btn btn-secondary btn-sm" onclick="viewRunningStatusTab('${t.train_number}')">Track Live Status ➔</button>
                 </div>
             </div>
-
-            <h4 style="color: #93c5fd; font-size: 1rem; margin-bottom: 12px;">Station Halts & Schedule Sequence (${t.stops.length} Stops)</h4>
+            <h4 style="color: #93c5fd; font-size: 1rem; margin-bottom: 12px;">Station Halts & Schedule (${t.stops.length} Stops)</h4>
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
-                    <thead>
-                        <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); text-align: left;">
-                            <th style="padding: 10px 8px;">#</th>
-                            <th style="padding: 10px 8px;">Station</th>
-                            <th style="padding: 10px 8px;">Arr</th>
-                            <th style="padding: 10px 8px;">Dep</th>
-                            <th style="padding: 10px 8px;">Halt</th>
-                            <th style="padding: 10px 8px;">Day</th>
-                            <th style="padding: 10px 8px;">Platform</th>
-                            <th style="padding: 10px 8px;">Distance</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${t.stops.map((s, idx) => `
-                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
-                                <td style="padding: 10px 8px; color: var(--text-dim);">${idx + 1}</td>
-                                <td style="padding: 10px 8px;"><strong>${s.station_code}</strong> - ${escapeHtml(s.station_name)}</td>
-                                <td style="padding: 10px 8px; font-family: var(--font-mono);">${s.scheduled_arrival}</td>
-                                <td style="padding: 10px 8px; font-family: var(--font-mono);">${s.scheduled_departure}</td>
-                                <td style="padding: 10px 8px;">${s.halt_minutes > 0 ? s.halt_minutes + ' min' : '--'}</td>
-                                <td style="padding: 10px 8px;">Day ${s.day_of_journey}</td>
-                                <td style="padding: 10px 8px; color: #a7f3d0;">${s.platform || 'PF 1'}</td>
-                                <td style="padding: 10px 8px; color: var(--text-dim);">${s.distance_km} km</td>
-                            </tr>
-                        `).join("")}
-                    </tbody>
+                    <thead><tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); text-align: left;"><th style="padding: 8px;">#</th><th style="padding: 8px;">Station</th><th style="padding: 8px;">Arr</th><th style="padding: 8px;">Dep</th><th style="padding: 8px;">Halt</th><th style="padding: 8px;">Day</th><th style="padding: 8px;">PF</th><th style="padding: 8px;">Distance</th></tr></thead>
+                    <tbody>${t.stops.map((s, idx) => `<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);"><td style="padding: 8px; color: var(--text-dim);">${idx + 1}</td><td style="padding: 8px;"><strong>${s.station_code}</strong> - ${escapeHtml(s.station_name)}</td><td style="padding: 8px; font-family: var(--font-mono);">${s.scheduled_arrival}</td><td style="padding: 8px; font-family: var(--font-mono);">${s.scheduled_departure}</td><td style="padding: 8px;">${s.halt_minutes > 0 ? s.halt_minutes + ' min' : '--'}</td><td style="padding: 8px;">Day ${s.day_of_journey}</td><td style="padding: 8px; color: #a7f3d0;">${s.platform || 'PF 1'}</td><td style="padding: 8px; color: var(--text-dim);">${s.distance_km} km</td></tr>`).join("")}</tbody>
                 </table>
             </div>
         `;
-    } catch (err) {
-        container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 24px;">Could not load details for train #${escapeHtml(trainNumber)}.</div>`;
+    } catch (e) {
+        c.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 24px;">Could not load train #${escapeHtml(trainNumber)}.</div>`;
     }
 }
 
-// Load Live Running Status
 async function loadRunningStatus(trainNumber) {
-    const container = document.getElementById("running-status-content");
-    container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">Querying running status...</div>`;
-
+    const c = $("running-status-content");
+    if (c) c.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">Querying running status...</div>`;
     try {
         const res = await fetch(`/api/trains/${encodeURIComponent(trainNumber)}/status`);
-        if (!res.ok) throw new Error("Status unavailable");
-        const status = await res.json();
-
-        const isDelayed = status.delay_minutes > 0;
-
-        container.innerHTML = `
-            <div class="live-status-hero ${isDelayed ? 'delayed' : ''}">
+        if (!res.ok) throw new Error();
+        const s = await res.json();
+        const delayed = s.delay_minutes > 0;
+        c.innerHTML = `
+            <div class="live-status-hero ${delayed ? 'delayed' : ''}">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div class="live-status-title">
-                        <span>🛰️</span>
-                        <span>${status.train_number} - ${escapeHtml(status.train_name)}</span>
-                    </div>
-                    <span class="badge-tag ${isDelayed ? 'badge-tag-blue' : 'badge-tag-green'}" style="font-size: 0.9rem;">
-                        ${status.current_status}
-                    </span>
+                    <div class="live-status-title"><span>🛰️</span><span>${s.train_number} - ${escapeHtml(s.train_name)}</span></div>
+                    <span class="badge-tag ${delayed ? 'badge-tag-blue' : 'badge-tag-green'}">${s.current_status}</span>
                 </div>
-
                 <div class="form-row" style="margin-top: 14px;">
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Current Location</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #60a5fa;">${status.current_station_name} (${status.current_station})</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Delay Status</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: ${isDelayed ? '#fcd34d' : '#34d399'};">${status.delay_status}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Upcoming Station</div>
-                        <div style="font-size: 1.1rem; font-weight: 600; color: #f8fafc;">${status.next_station_name ? status.next_station_name + ' (' + status.next_station + ')' : 'Approaching Destination'}</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Status Time</div>
-                        <div style="font-size: 0.95rem; font-family: var(--font-mono); color: #cbd5e1;">${status.last_updated}</div>
-                    </div>
+                    <div><div style="font-size: 0.8rem; color: var(--text-dim);">CURRENT LOCATION</div><div style="font-size: 1.25rem; font-weight: 700; color: #60a5fa;">${s.current_station_name} (${s.current_station})</div></div>
+                    <div><div style="font-size: 0.8rem; color: var(--text-dim);">DELAY STATUS</div><div style="font-size: 1.25rem; font-weight: 700; color: ${delayed ? '#fcd34d' : '#34d399'};">${s.delay_status}</div></div>
+                    <div><div style="font-size: 0.8rem; color: var(--text-dim);">NEXT STATION</div><div style="font-size: 1.1rem; font-weight: 600; color: #f8fafc;">${s.next_station_name ? s.next_station_name + ' (' + s.next_station + ')' : 'Approaching Destination'}</div></div>
+                    <div><div style="font-size: 0.8rem; color: var(--text-dim);">STATUS TIME</div><div style="font-size: 0.95rem; font-family: var(--font-mono); color: #cbd5e1;">${s.last_updated}</div></div>
                 </div>
-
-                <div class="live-disclaimer-note">
-                    * Last updated: ${status.last_updated}. Data may be delayed or unavailable. Verify critical travel information through official railway sources (NTES / 139).
-                </div>
+                <div class="live-disclaimer-note">* Last updated: ${s.last_updated}. Verify critical travel info via NTES / 139.</div>
             </div>
-
             <h4 style="color: #93c5fd; font-size: 1rem; margin-bottom: 12px;">Station Progress Timeline</h4>
-            <div class="route-timeline-tree">
-                ${status.timeline.map(s => `
-                    <div class="timeline-station-node ${s.has_departed ? 'departed' : ''} ${s.station_code === status.current_station ? 'current-station' : ''}">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong style="font-size: 1rem; color: #fff;">${s.station_code} - ${escapeHtml(s.station_name)}</strong>
-                                <span style="font-size: 0.78rem; color: #a7f3d0; margin-left: 8px;">${s.platform || 'PF 1'}</span>
-                                ${s.has_departed ? '<span style="font-size: 0.75rem; color: #34d399; margin-left: 8px;">✓ Departed</span>' : ''}
-                                ${s.station_code === status.current_station ? '<span style="font-size: 0.75rem; color: #f59e0b; margin-left: 8px;">📍 Train Here</span>' : ''}
-                            </div>
-                            <div style="text-align: right; font-family: var(--font-mono); font-size: 0.85rem;">
-                                <div>Sch: Arr ${s.scheduled_arrival} | Dep ${s.scheduled_departure}</div>
-                                ${s.actual_arrival ? `<div style="color: #60a5fa;">Act: Arr ${s.actual_arrival} ${s.actual_departure ? '| Dep ' + s.actual_departure : ''}</div>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `).join("")}
-            </div>
+            <div class="route-timeline-tree">${s.timeline.map(st => `<div class="timeline-station-node ${st.has_departed ? 'departed' : ''} ${st.station_code === s.current_station ? 'current-station' : ''}"><div style="display: flex; justify-content: space-between; align-items: center;"><div><strong style="color: #fff;">${st.station_code} - ${escapeHtml(st.station_name)}</strong><span style="font-size: 0.78rem; color: #a7f3d0; margin-left: 8px;">${st.platform || 'PF 1'}</span>${st.has_departed ? '<span style="font-size: 0.75rem; color: #34d399; margin-left: 8px;">✓ Departed</span>' : ''}${st.station_code === s.current_station ? '<span style="font-size: 0.75rem; color: #f59e0b; margin-left: 8px;">📍 Train Here</span>' : ''}</div><div style="text-align: right; font-family: var(--font-mono); font-size: 0.85rem;"><div>Sch: Arr ${st.scheduled_arrival} | Dep ${st.scheduled_departure}</div>${st.actual_arrival ? `<div style="color: #60a5fa;">Act: Arr ${st.actual_arrival} ${st.actual_departure ? '| Dep ' + st.actual_departure : ''}</div>` : ''}</div></div></div>`).join("")}</div>
         `;
-    } catch (err) {
-        container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 24px;">Could not retrieve live running status for train #${escapeHtml(trainNumber)}.</div>`;
+    } catch (e) {
+        c.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 24px;">Could not retrieve live status for #${escapeHtml(trainNumber)}.</div>`;
     }
 }
 
-// Load Route Timeline
 async function loadRouteTimeline(trainNumber) {
-    const container = document.getElementById("route-timeline-content");
-    container.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">Loading route stops...</div>`;
-
+    const c = $("route-timeline-content");
+    if (c) c.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">Loading route stops...</div>`;
     try {
         const res = await fetch(`/api/trains/${encodeURIComponent(trainNumber)}/route`);
-        if (!res.ok) throw new Error("Route not found");
+        if (!res.ok) throw new Error();
         const stops = await res.json();
-
-        container.innerHTML = `
-            <div style="margin-bottom: 16px;">
-                <h3 style="font-size: 1.1rem; color: #fff;">Station Route & Halt Sequence for Train #${escapeHtml(trainNumber)}</h3>
-            </div>
-            <div class="route-timeline-tree">
-                ${stops.map(s => `
-                    <div class="timeline-station-node">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong style="font-size: 1rem; color: #fff;">${s.station_code} - ${escapeHtml(s.station_name)}</strong>
-                                <span style="font-size: 0.78rem; color: #a7f3d0; margin-left: 8px;">${s.platform || 'PF 1'}</span>
-                                <span style="font-size: 0.75rem; color: var(--text-dim); margin-left: 8px;">Day ${s.day_of_journey} • ${s.distance_km} km</span>
-                            </div>
-                            <div style="text-align: right; font-family: var(--font-mono); font-size: 0.88rem;">
-                                <div>Arr: <strong>${s.scheduled_arrival}</strong> | Dep: <strong>${s.scheduled_departure}</strong></div>
-                                <div style="font-size: 0.78rem; color: var(--text-muted);">${s.halt_minutes > 0 ? s.halt_minutes + ' min halt' : 'Start/End Station'}</div>
-                            </div>
-                        </div>
-                    </div>
-                `).join("")}
-            </div>
+        c.innerHTML = `
+            <div style="margin-bottom: 16px;"><h3 style="font-size: 1.1rem; color: #fff;">Route Timeline for Train #${escapeHtml(trainNumber)}</h3></div>
+            <div class="route-timeline-tree">${stops.map(s => `<div class="timeline-station-node"><div style="display: flex; justify-content: space-between; align-items: center;"><div><strong style="color: #fff;">${s.station_code} - ${escapeHtml(s.station_name)}</strong><span style="font-size: 0.78rem; color: #a7f3d0; margin-left: 8px;">${s.platform || 'PF 1'}</span><span style="font-size: 0.75rem; color: var(--text-dim); margin-left: 8px;">Day ${s.day_of_journey} • ${s.distance_km} km</span></div><div style="text-align: right; font-family: var(--font-mono); font-size: 0.88rem;"><div>Arr: <strong>${s.scheduled_arrival}</strong> | Dep: <strong>${s.scheduled_departure}</strong></div><div style="font-size: 0.78rem; color: var(--text-muted);">${s.halt_minutes > 0 ? s.halt_minutes + ' min halt' : 'Start/End'}</div></div></div></div>`).join("")}</div>
         `;
-    } catch (err) {
-        container.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 24px;">Could not load route for train #${escapeHtml(trainNumber)}.</div>`;
+    } catch (e) {
+        c.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 24px;">Could not load route for #${escapeHtml(trainNumber)}.</div>`;
     }
 }
 
-// ================= JOURNEY PLANNER SUBMISSION =================
+// ================= JOURNEY PLANNER & COUNTDOWN =================
 async function handleJourneyPlannerSubmit(e) {
     e.preventDefault();
-    const fromStation = document.getElementById("jp-from-station").value.trim();
-    const toStation = document.getElementById("jp-to-station").value.trim();
-    const journeyDate = document.getElementById("jp-journey-date").value;
-    const preferredClass = document.getElementById("jp-class").value;
-    const tatkalType = document.getElementById("jp-tatkal-type").value;
-    const primaryTrain = document.getElementById("jp-primary-train").value.trim();
-    const alt1Train = document.getElementById("jp-alt1-train").value.trim() || null;
-    const alt2Train = document.getElementById("jp-alt2-train").value.trim() || null;
-
+    const primary = $("jp-primary-train")?.value.trim();
     const payload = {
-        from_station: fromStation,
-        to_station: toStation,
-        journey_date: journeyDate,
-        preferred_train: primaryTrain,
-        preferred_class: preferredClass,
-        tatkal_type: tatkalType,
-        primary_train: primaryTrain,
-        alt_train_1: alt1Train,
-        alt_train_2: alt2Train
+        from_station: $("jp-from-station")?.value.trim(),
+        to_station: $("jp-to-station")?.value.trim(),
+        journey_date: $("jp-journey-date")?.value,
+        preferred_train: primary,
+        preferred_class: $("jp-class")?.value,
+        tatkal_type: $("jp-tatkal-type")?.value,
+        primary_train: primary,
+        alt_train_1: $("jp-alt1-train")?.value.trim() || null,
+        alt_train_2: $("jp-alt2-train")?.value.trim() || null
     };
 
     try {
-        const res = await fetch("/api/journey", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-            const error = await res.json();
-            showToast(`⚠️ Error: ${error.detail || "Could not save journey"}`);
-            return;
-        }
-
+        const res = await fetch("/api/journey", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!res.ok) { const err = await res.json(); showToast(`⚠️ Error: ${err.detail || "Could not save journey"}`); return; }
         const data = await res.json();
         applyJourneyState(data);
-        showToast("✅ Journey plan saved! Tatkal opening calculated.");
+        showToast("✅ Journey saved! Tatkal opening computed.");
         switchView("tatkal-prep");
-    } catch (err) {
-        showToast("⚠️ Network error while saving journey.");
-    }
+    } catch (err) { showToast("⚠️ Network error saving journey."); }
 }
 
-// Load Latest Journey
 async function loadLatestJourney() {
     try {
         const res = await fetch("/api/journey/latest");
         if (!res.ok) return;
         const data = await res.json();
-        if (data && data.journey) {
-            applyJourneyState(data);
-        }
-    } catch (err) {
-        console.error("Latest journey error:", err);
-    }
+        if (data?.journey) applyJourneyState(data);
+    } catch (e) {}
 }
 
-// Apply Journey State to UI & Start Countdown
 function applyJourneyState(data) {
     activeJourney = data.journey;
     openingTimeIso = data.opening_time_iso;
-    
     if (activeJourney) {
-        // Update Journey Planner inputs
-        const jpFrom = document.getElementById("jp-from-station");
-        const jpTo = document.getElementById("jp-to-station");
-        const jpDate = document.getElementById("jp-journey-date");
-        const jpClass = document.getElementById("jp-class");
-        const jpTatkal = document.getElementById("jp-tatkal-type");
-        const jpPrimary = document.getElementById("jp-primary-train");
-        const jpAlt1 = document.getElementById("jp-alt1-train");
-        const jpAlt2 = document.getElementById("jp-alt2-train");
+        const setVal = (id, val) => { const el = $(id); if (el && val !== undefined) el.value = val; };
+        const setText = (id, txt) => { const el = $(id); if (el && txt !== undefined) el.textContent = txt; };
 
-        if (jpFrom) jpFrom.value = activeJourney.from_station;
-        if (jpTo) jpTo.value = activeJourney.to_station;
-        if (jpDate) jpDate.value = activeJourney.journey_date;
-        if (jpClass) jpClass.value = activeJourney.preferred_class;
-        if (jpTatkal) jpTatkal.value = activeJourney.tatkal_type;
-        if (jpPrimary) jpPrimary.value = activeJourney.primary_train || activeJourney.preferred_train;
-        if (jpAlt1) jpAlt1.value = activeJourney.alt_train_1 || "";
-        if (jpAlt2) jpAlt2.value = activeJourney.alt_train_2 || "";
+        setVal("jp-from-station", activeJourney.from_station);
+        setVal("jp-to-station", activeJourney.to_station);
+        setVal("jp-journey-date", activeJourney.journey_date);
+        setVal("jp-class", activeJourney.preferred_class);
+        setVal("jp-tatkal-type", activeJourney.tatkal_type);
+        setVal("jp-primary-train", activeJourney.primary_train || activeJourney.preferred_train);
+        setVal("jp-alt1-train", activeJourney.alt_train_1 || "");
+        setVal("jp-alt2-train", activeJourney.alt_train_2 || "");
 
-        // Auto-discover route trains for Journey Planner if route is set
         if (activeJourney.from_station && activeJourney.to_station) {
             autoDiscoverJourneyTrains(activeJourney.from_station, activeJourney.to_station, false);
         }
 
-        // Update Dashboard Slots Preview
-        const dashPrimary = document.getElementById("dash-primary-train-name");
-        const dashAlt1 = document.getElementById("dash-alt1-train-name");
-        const dashAlt2 = document.getElementById("dash-alt2-train-name");
-        if (dashPrimary) dashPrimary.textContent = activeJourney.primary_train || activeJourney.preferred_train;
-        if (dashAlt1) dashAlt1.textContent = activeJourney.alt_train_1 || "None specified";
-        if (dashAlt2) dashAlt2.textContent = activeJourney.alt_train_2 || "None specified";
+        setText("dash-primary-train-name", activeJourney.primary_train || activeJourney.preferred_train || "Not Selected");
+        setText("dash-alt1-train-name", activeJourney.alt_train_1 || "None specified");
+        setText("dash-alt2-train-name", activeJourney.alt_train_2 || "None specified");
 
-        // Update Opening Times
-        const dashOpenTime = document.getElementById("dash-opening-time");
-        const tatkalOpenTime = document.getElementById("tatkal-opening-time");
-        const timeText = data.opening_time || activeJourney.expected_opening_time;
-        if (dashOpenTime) dashOpenTime.textContent = timeText;
-        if (tatkalOpenTime) tatkalOpenTime.textContent = timeText;
+        const openStr = data.opening_time || activeJourney.expected_opening_time;
+        setText("dash-opening-time", openStr);
+        setText("tatkal-opening-time", openStr);
     }
 
     if (countdownInterval) clearInterval(countdownInterval);
@@ -958,7 +528,6 @@ function applyJourneyState(data) {
     startCountdownLoop();
 }
 
-// Countdown Engine
 function startCountdownLoop() {
     updateCountdownTick();
     countdownInterval = setInterval(updateCountdownTick, 1000);
@@ -966,43 +535,24 @@ function startCountdownLoop() {
 
 function updateCountdownTick() {
     if (!openingTimeIso) return;
+    const diffSec = Math.floor((new Date(openingTimeIso).getTime() - Date.now()) / 1000);
 
-    const targetTime = new Date(openingTimeIso).getTime();
-    const now = new Date().getTime();
-    const diffMs = targetTime - now;
-    const totalSeconds = Math.floor(diffMs / 1000);
-
-    const updateDigit = (id, val) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = String(val).padStart(2, "0");
+    const setDigit = (prefix, val) => { const el = $(prefix); if (el) el.textContent = pad(val); };
+    const setBadge = (text, bg, col, border) => {
+        ["dash-status-badge", "tatkal-status-badge"].forEach(id => {
+            const el = $(id);
+            if (el) { el.textContent = text; el.style.background = bg; el.style.color = col; el.style.borderColor = border; }
+        });
+    };
+    const setNotice = html => {
+        ["dash-countdown-message", "tatkal-countdown-message"].forEach(id => { const el = $(id); if (el) el.innerHTML = html; });
     };
 
-    const updateBadge = (id, text, bg, color, border) => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.textContent = text;
-            el.style.background = bg;
-            el.style.color = color;
-            el.style.borderColor = border;
-        }
-    };
-
-    if (totalSeconds <= 0) {
-        ["dash-timer-days", "tatkal-timer-days"].forEach(id => updateDigit(id, "00"));
-        ["dash-timer-hours", "tatkal-timer-hours"].forEach(id => updateDigit(id, "00"));
-        ["dash-timer-minutes", "tatkal-timer-minutes"].forEach(id => updateDigit(id, "00"));
-        ["dash-timer-seconds", "tatkal-timer-seconds"].forEach(id => updateDigit(id, "00"));
-
-        ["dash-status-badge", "tatkal-status-badge"].forEach(id => 
-            updateBadge(id, "WINDOW OPEN", "rgba(16, 185, 129, 0.2)", "#6ee7b7", "rgba(16, 185, 129, 0.5)")
-        );
-
-        const openMsg = "Tatkal booking window should now be open. Please open/use IRCTC manually.";
-        const dashMsg = document.getElementById("dash-countdown-message");
-        const tatkalMsg = document.getElementById("tatkal-countdown-message");
-        if (dashMsg) dashMsg.innerHTML = `<strong>${openMsg}</strong>`;
-        if (tatkalMsg) tatkalMsg.innerHTML = `<strong>${openMsg}</strong>`;
-
+    if (diffSec <= 0) {
+        ["dash-timer-", "tatkal-timer-"].forEach(p => ["days", "hours", "minutes", "seconds"].forEach(k => setDigit(p + k, 0)));
+        setBadge("WINDOW OPEN", "rgba(16, 185, 129, 0.2)", "#6ee7b7", "rgba(16, 185, 129, 0.5)");
+        const openMsg = "Tatkal booking window is now open. Open IRCTC manually.";
+        setNotice(`<strong>${openMsg}</strong>`);
         if (!notifiedMilestones.has(0)) {
             notifiedMilestones.add(0);
             playAlertChime();
@@ -1011,80 +561,57 @@ function updateCountdownTick() {
         return;
     }
 
-    const days = Math.floor(totalSeconds / 86400);
-    const hours = Math.floor((totalSeconds % 86400) / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
+    const d = Math.floor(diffSec / 86400), h = Math.floor((diffSec % 86400) / 3600);
+    const m = Math.floor((diffSec % 3600) / 60), s = diffSec % 60;
 
-    ["dash-timer-days", "tatkal-timer-days"].forEach(id => updateDigit(id, days));
-    ["dash-timer-hours", "tatkal-timer-hours"].forEach(id => updateDigit(id, hours));
-    ["dash-timer-minutes", "tatkal-timer-minutes"].forEach(id => updateDigit(id, minutes));
-    ["dash-timer-seconds", "tatkal-timer-seconds"].forEach(id => updateDigit(id, seconds));
+    ["dash-timer-", "tatkal-timer-"].forEach(p => {
+        setDigit(p + "days", d); setDigit(p + "hours", h); setDigit(p + "minutes", m); setDigit(p + "seconds", s);
+    });
 
-    const timeStr = `${days > 0 ? days + "d " : ""}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-    const openNotice = `Tatkal opening in: ${timeStr}`;
-    const dashMsg = document.getElementById("dash-countdown-message");
-    const tatkalMsg = document.getElementById("tatkal-countdown-message");
-    if (dashMsg) dashMsg.textContent = openNotice;
-    if (tatkalMsg) tatkalMsg.textContent = openNotice;
+    const timeStr = `${d ? d + "d " : ""}${pad(h)}:${pad(m)}:${pad(s)}`;
+    setNotice(`Tatkal opening in: ${timeStr}`);
 
-    // Milestones
-    checkMilestone(totalSeconds, 900, "15 Minutes Left", "15 minutes until Tatkal opening. Confirm your passenger details.");
-    checkMilestone(totalSeconds, 300, "5 Minutes Left", "5 minutes until Tatkal opening! Prepare to open IRCTC manually.");
-    checkMilestone(totalSeconds, 60, "1 Minute Left", "1 minute remaining! Tatkal window opens in 60 seconds.");
+    checkMilestone(diffSec, 900, "15 Minutes Left", "15 minutes until Tatkal opening. Confirm your passenger details.");
+    checkMilestone(diffSec, 300, "5 Minutes Left", "5 minutes until Tatkal opening! Prepare to open IRCTC manually.");
+    checkMilestone(diffSec, 60, "1 Minute Left", "1 minute remaining! Tatkal window opens in 60 seconds.");
 
-    if (totalSeconds <= 900) {
-        ["dash-status-badge", "tatkal-status-badge"].forEach(id => 
-            updateBadge(id, "OPENING SOON", "rgba(245, 158, 11, 0.2)", "#fcd34d", "rgba(245, 158, 11, 0.5)")
-        );
-    } else {
-        ["dash-status-badge", "tatkal-status-badge"].forEach(id => 
-            updateBadge(id, "UPCOMING", "rgba(59, 130, 246, 0.2)", "#93c5fd", "rgba(59, 130, 246, 0.5)")
-        );
-    }
+    if (diffSec <= 900) setBadge("OPENING SOON", "rgba(245, 158, 11, 0.2)", "#fcd34d", "rgba(245, 158, 11, 0.5)");
+    else setBadge("UPCOMING", "rgba(59, 130, 246, 0.2)", "#93c5fd", "rgba(59, 130, 246, 0.5)");
 }
 
-function checkMilestone(secondsLeft, milestone, title, message) {
-    if (secondsLeft <= milestone && secondsLeft > (milestone - 2) && !notifiedMilestones.has(milestone)) {
-        notifiedMilestones.add(milestone);
+function checkMilestone(secondsLeft, milestoneSec, title, message) {
+    if (secondsLeft <= milestoneSec && !notifiedMilestones.has(milestoneSec)) {
+        notifiedMilestones.add(milestoneSec);
         playAlertChime();
         triggerNotification(title, message);
         showToast(`⏰ ${title}: ${message}`);
     }
 }
 
-// ================= PASSENGERS =================
+// ================= PASSENGERS & TEXT AREA =================
 async function loadPassengers() {
     try {
         const res = await fetch("/api/passengers");
         if (!res.ok) return;
         const passengers = await res.json();
         renderPassengers(passengers);
-    } catch (err) {
-        console.error("Load passengers error:", err);
-    }
+    } catch (e) {}
 }
 
 function renderPassengers(passengers) {
     preparedPassengers = passengers || [];
-    const dashContainer = document.getElementById("dash-passenger-list");
-    const viewContainer = document.getElementById("view-passenger-container");
-    const dashCount = document.getElementById("dash-passenger-count");
-    const addPanel = document.getElementById("view-add-passenger-panel");
+    const dashList = $("dash-passenger-list"), viewList = $("view-passenger-container");
+    const countEl = $("dash-passenger-count"), addPanel = $("view-add-passenger-panel");
+    if (countEl) countEl.textContent = preparedPassengers.length;
 
-    if (dashCount) dashCount.textContent = preparedPassengers.length;
-
-    // Dashboard preview - Full Details visible on each card
-    if (dashContainer) {
-        if (!preparedPassengers || preparedPassengers.length === 0) {
-            dashContainer.innerHTML = `<div style="color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 16px;">No passengers prepared. Add in Passenger Details tab.</div>`;
+    if (dashList) {
+        if (!preparedPassengers.length) {
+            dashList.innerHTML = `<div style="color: var(--text-dim); font-size: 0.88rem; text-align: center; padding: 16px;">No passengers prepared. Add in Passenger Details tab.</div>`;
         } else {
-            dashContainer.innerHTML = preparedPassengers.map((p, idx) => `
+            dashList.innerHTML = preparedPassengers.map((p, idx) => `
                 <div class="dash-passenger-item" id="dash-pass-card-${p.id || idx}">
                     <div class="dash-passenger-header">
-                        <div>
-                            <strong style="color: #fff; font-size: 0.95rem;">${idx + 1}. ${escapeHtml(p.name)}</strong>
-                        </div>
+                        <strong style="color: #fff; font-size: 0.95rem;">${idx + 1}. ${escapeHtml(p.name)}</strong>
                         <div class="passenger-meta-row">
                             <span class="meta-badge meta-badge-gender">${p.age} yrs • ${p.gender}</span>
                             <span class="meta-badge meta-badge-berth">🛏️ ${escapeHtml(p.berth_preference || 'No Preference')}</span>
@@ -1093,7 +620,7 @@ function renderPassengers(passengers) {
                         </div>
                     </div>
                     <div class="dash-passenger-copy-row">
-                        <span style="font-size: 0.74rem; color: var(--text-muted); margin-right: 2px;">Quick Copy:</span>
+                        <span style="font-size: 0.74rem; color: var(--text-muted);">Quick Copy:</span>
                         <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${escapeJs(p.name)}', 'Name')">📋 Name</button>
                         <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${p.age}', 'Age')">📋 Age</button>
                         <button type="button" class="copy-mini-btn" onclick="copyIndividualField('${escapeJs(p.berth_preference || '')}', 'Berth')">🛏️ Berth</button>
@@ -1104,13 +631,12 @@ function renderPassengers(passengers) {
         }
     }
 
-    // Full Passenger View
-    if (viewContainer) {
-        if (!preparedPassengers || preparedPassengers.length === 0) {
-            viewContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">No passengers prepared yet. Add up to 4 passengers below.</div>`;
+    if (viewList) {
+        if (!preparedPassengers.length) {
+            viewList.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--text-dim);">No passengers prepared yet. Add up to 4 passengers below.</div>`;
             if (addPanel) addPanel.style.display = "block";
         } else {
-            viewContainer.innerHTML = preparedPassengers.map((p, idx) => `
+            viewList.innerHTML = preparedPassengers.map((p, idx) => `
                 <div class="passenger-card" id="passenger-card-${p.id}">
                     <div class="passenger-details" style="flex: 1;">
                         <div class="passenger-name" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1133,185 +659,100 @@ function renderPassengers(passengers) {
                         <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${p.age}', 'Age')">📋 Age</button>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.berth_preference || '')}', 'Berth')">🛏️ Berth</button>
                         <button type="button" class="btn btn-secondary btn-sm" onclick="copyIndividualField('${escapeJs(p.meal_preference || '')}', 'Meal')">🥗 Meal</button>
-                        <button type="button" class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePassenger(${p.id})" title="Remove Passenger">✕</button>
+                        <button type="button" class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deletePassenger(${p.id})">✕</button>
                     </div>
                 </div>
             `).join("");
-
             if (addPanel) addPanel.style.display = preparedPassengers.length >= 4 ? "none" : "block";
         }
     }
-
-    // Update Textareas with all details in active formats
     updatePassengerTextareas();
 }
 
 function updatePassengerTextareas() {
-    const dashTextarea = document.getElementById("dash-passenger-textarea");
-    const viewTextarea = document.getElementById("view-passenger-textarea");
-
-    if (dashTextarea) {
-        dashTextarea.value = generatePassengerText(preparedPassengers, textareaFormats.dash);
-    }
-    if (viewTextarea) {
-        viewTextarea.value = generatePassengerText(preparedPassengers, textareaFormats.view);
-    }
+    const dTa = $("dash-passenger-textarea"), vTa = $("view-passenger-textarea");
+    if (dTa) dTa.value = generatePassengerText(preparedPassengers, textareaFormats.dash);
+    if (vTa) vTa.value = generatePassengerText(preparedPassengers, textareaFormats.view);
 }
 
 function generatePassengerText(passengers, format = "full") {
-    if (!passengers || passengers.length === 0) {
-        return "No passenger details prepared. Add passengers in Passenger Details tab.";
-    }
-
+    if (!passengers?.length) return "No passenger details prepared. Add passengers in Passenger Details tab.";
     if (format === "row") {
-        const rows = ["# | Name | Age | Gender | Berth | Meal | Senior Citizen"];
-        passengers.forEach((p, idx) => {
-            rows.push(`${idx + 1}, ${p.name}, ${p.age}, ${p.gender}, ${p.berth_preference}, ${p.meal_preference}, ${p.senior_citizen_opt ? 'Yes' : 'No'}`);
-        });
-        return rows.join("\n");
+        return ["# | Name | Age | Gender | Berth | Meal | Senior Citizen", ...passengers.map((p, idx) => `${idx + 1}, ${p.name}, ${p.age}, ${p.gender}, ${p.berth_preference}, ${p.meal_preference}, ${p.senior_citizen_opt ? 'Yes' : 'No'}`)].join("\n");
     }
-
     if (format === "irctc") {
-        return passengers.map((p, idx) => {
-            const sr = p.senior_citizen_opt ? " | [Senior Citizen Concession]" : "";
-            return `${idx + 1}. ${p.name} | ${p.age}y | ${p.gender} | Berth: ${p.berth_preference} | Meal: ${p.meal_preference}${sr}`;
-        }).join("\n");
+        return passengers.map((p, idx) => `${idx + 1}. ${p.name} | ${p.age}y | ${p.gender} | Berth: ${p.berth_preference} | Meal: ${p.meal_preference}${p.senior_citizen_opt ? ' | [Senior Citizen Concession]' : ''}`).join("\n");
     }
-
-    // Default "full" format: complete human-readable summary
-    const lines = [
-        `=== PREPARED PASSENGERS (${passengers.length}/4) ===`
-    ];
+    const lines = [`=== PREPARED PASSENGERS (${passengers.length}/4) ===`];
     if (activeJourney) {
         lines.push(`Route: ${activeJourney.from_station} -> ${activeJourney.to_station} | Date: ${activeJourney.journey_date}`);
-        lines.push(`Train: ${activeJourney.primary_train || activeJourney.preferred_train || 'N/A'} (${activeJourney.preferred_class || '3A'})`);
-        lines.push(`Quota: Tatkal (${activeJourney.tatkal_type || 'AC'})`);
+        lines.push(`Train: ${activeJourney.primary_train || activeJourney.preferred_train || 'N/A'} (${activeJourney.preferred_class || '3A'}) | Quota: Tatkal`);
         lines.push("--------------------------------------------------");
     }
-
     passengers.forEach((p, idx) => {
-        lines.push(`Passenger ${idx + 1}:`);
-        lines.push(`  Full Name:       ${p.name}`);
-        lines.push(`  Age & Gender:    ${p.age} years | ${p.gender}`);
-        lines.push(`  Berth Choice:    ${p.berth_preference}`);
-        lines.push(`  Meal Choice:     ${p.meal_preference}`);
-        lines.push(`  Senior Citizen:  ${p.senior_citizen_opt ? 'Yes (Concession Opted)' : 'No'}`);
-        if (idx < passengers.length - 1) lines.push("");
+        lines.push(`Passenger ${idx + 1}:\n  Full Name:       ${p.name}\n  Age & Gender:    ${p.age} years | ${p.gender}\n  Berth Choice:    ${p.berth_preference}\n  Meal Choice:     ${p.meal_preference}\n  Senior Citizen:  ${p.senior_citizen_opt ? 'Yes (Concession Opted)' : 'No'}${idx < passengers.length - 1 ? '\n' : ''}`);
     });
-
-    lines.push("==================================================");
-    lines.push("* Instructions: Use these exact details to manually fill passenger fields on IRCTC portal.");
-
+    lines.push("==================================================\n* Instructions: Use these exact details to manually fill passenger fields on IRCTC portal.");
     return lines.join("\n");
 }
 
 window.switchTextareaFormat = function(prefix, format) {
     textareaFormats[prefix] = format;
-
-    // Update active pill button
-    const container = prefix === "dash" ? document.getElementById("dash-textarea-wrapper") : document.getElementById("view-textarea-wrapper");
-    if (container) {
-        container.querySelectorAll(".format-pill").forEach(btn => {
-            if (btn.id === `${prefix}-pill-${format}`) btn.classList.add("active");
-            else btn.classList.remove("active");
-        });
-    }
-
-    const textarea = document.getElementById(`${prefix}-passenger-textarea`);
-    if (textarea) {
-        textarea.value = generatePassengerText(preparedPassengers, format);
-    }
+    const container = $(prefix === "dash" ? "dash-textarea-wrapper" : "view-textarea-wrapper");
+    container?.querySelectorAll(".format-pill").forEach(btn => btn.classList.toggle("active", btn.id === `${prefix}-pill-${format}`));
+    const ta = $(`${prefix}-passenger-textarea`);
+    if (ta) ta.value = generatePassengerText(preparedPassengers, format);
 };
 
-window.copyTextareaContent = function(textareaId) {
-    const textarea = document.getElementById(textareaId);
-    if (!textarea || !textarea.value || textarea.value.startsWith("No passenger")) {
-        showToast("⚠️ No passenger details available to copy.");
-        return;
-    }
-    copyToClipboard(textarea.value);
+window.copyTextareaContent = function(id) {
+    const ta = $(id);
+    if (!ta?.value || ta.value.startsWith("No passenger")) { showToast("⚠️ No passenger details to copy."); return; }
+    copyToClipboard(ta.value);
     showToast("📋 Copied all passenger details to clipboard!");
 };
 
-window.selectTextarea = function(textareaId) {
-    const textarea = document.getElementById(textareaId);
-    if (textarea) {
-        textarea.focus();
-        textarea.select();
-        showToast("🔍 All text selected! Press Ctrl+C to copy.");
-    }
+window.selectTextarea = function(id) {
+    const ta = $(id);
+    if (ta) { ta.focus(); ta.select(); showToast("🔍 All text selected! Press Ctrl+C."); }
 };
 
 async function handlePassengerSubmit(e) {
     e.preventDefault();
-    const name = document.getElementById("view-passenger-name").value.trim();
-    const age = parseInt(document.getElementById("view-passenger-age").value, 10);
-    const gender = document.getElementById("view-passenger-gender").value;
-    const berth = document.getElementById("view-passenger-berth").value;
-    const meal = document.getElementById("view-passenger-meal").value;
-    const senior = Boolean(document.getElementById("view-passenger-senior")?.checked);
-
     const payload = {
-        name: name,
-        age: age,
-        gender: gender,
-        berth_preference: berth,
-        meal_preference: meal,
-        senior_citizen_opt: senior
+        name: $("view-passenger-name")?.value.trim(),
+        age: parseInt($("view-passenger-age")?.value, 10),
+        gender: $("view-passenger-gender")?.value,
+        berth_preference: $("view-passenger-berth")?.value,
+        meal_preference: $("view-passenger-meal")?.value,
+        senior_citizen_opt: Boolean($("view-passenger-senior")?.checked)
     };
-
     try {
-        const res = await fetch("/api/passengers", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-            const err = await res.json();
-            showToast(`⚠️ ${err.detail || "Could not add passenger."}`);
-            return;
-        }
-
-        document.getElementById("form-view-add-passenger").reset();
+        const res = await fetch("/api/passengers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!res.ok) { const err = await res.json(); showToast(`⚠️ ${err.detail || "Could not add passenger."}`); return; }
+        $("form-view-add-passenger")?.reset();
         showToast("✅ Passenger added!");
         loadPassengers();
-    } catch (err) {
-        showToast("⚠️ Network error while adding passenger.");
-    }
+    } catch (err) { showToast("⚠️ Network error adding passenger."); }
 }
 
 window.deletePassenger = async function(id) {
     try {
         const res = await fetch(`/api/passengers/${id}`, { method: "DELETE" });
-        if (res.ok) {
-            showToast("🗑️ Passenger removed.");
-            loadPassengers();
-        }
-    } catch (err) {
-        showToast("⚠️ Error removing passenger.");
-    }
+        if (res.ok) { showToast("🗑️ Passenger removed."); loadPassengers(); }
+    } catch (err) { showToast("⚠️ Error removing passenger."); }
 };
 
-window.copyIndividualField = function(val, label) {
-    copyToClipboard(val);
-    showToast(`📋 Copied ${label}: "${val}"`);
-};
+window.copyIndividualField = function(val, label) { copyToClipboard(val); showToast(`📋 Copied ${label}: "${val}"`); };
 
 async function copyAllPassengerDetails() {
     try {
         const res = await fetch("/api/clipboard/passengers");
         if (!res.ok) return;
         const data = await res.json();
-        if (data.count === 0) {
-            showToast("⚠️ Please add passengers first.");
-            return;
-        }
+        if (!data.count) { showToast("⚠️ Please add passengers first."); return; }
         copyToClipboard(data.formatted_summary);
         showToast(`📋 Copied all ${data.count} passenger details to clipboard!`);
-    } catch (err) {
-        showToast("⚠️ Error preparing clipboard text.");
-    }
+    } catch (err) { showToast("⚠️ Error preparing clipboard text."); }
 }
 
 // ================= CHECKLIST =================
@@ -1319,99 +760,67 @@ async function loadChecklist() {
     try {
         const res = await fetch("/api/checklist");
         if (!res.ok) return;
-        const items = await res.json();
-        renderChecklist(items);
-    } catch (err) {
-        console.error("Checklist load error:", err);
-    }
+        renderChecklist(await res.json());
+    } catch (e) {}
 }
 
 function renderChecklist(items) {
-    const container = document.getElementById("tatkal-checklist-container");
-    if (!container) return;
-
+    const list = $("checklist-items-container");
+    if (!list) return;
     let checkedCount = 0;
-    container.innerHTML = items.map(item => {
+    list.innerHTML = items.map(item => {
         if (item.checked) checkedCount++;
         return `
-            <label class="checklist-item ${item.checked ? 'checked' : ''}" id="check-item-${item.item_key}">
-                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleChecklistItem('${item.item_key}', this.checked)">
-                <span class="checklist-text">${escapeHtml(item.item_text)}</span>
+            <label class="checklist-item ${item.checked ? 'checked' : ''}" id="checklist-item-${item.key}">
+                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleChecklistItem('${item.key}', this.checked)">
+                <span class="checklist-text">${escapeHtml(item.text)}</span>
             </label>
         `;
     }).join("");
 
-    const total = items.length;
-    const percent = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
-
-    const progressFill = document.getElementById("tatkal-checklist-progress-fill");
-    const progressText = document.getElementById("tatkal-checklist-progress-text");
-    const dashFill = document.getElementById("dash-checklist-fill");
-    const dashText = document.getElementById("dash-checklist-text");
-
-    if (progressFill) progressFill.style.width = `${percent}%`;
-    if (progressText) progressText.textContent = `${checkedCount} of ${total} Completed (${percent}%)`;
-    if (dashFill) dashFill.style.width = `${percent}%`;
-    if (dashText) dashText.textContent = `${checkedCount} of ${total} Completed (${percent}%)`;
+    const total = items.length, pct = total ? Math.round((checkedCount / total) * 100) : 0;
+    const updateProgress = (fillId, textId) => {
+        const f = $(fillId), t = $(textId);
+        if (f) f.style.width = `${pct}%`;
+        if (t) t.textContent = `${checkedCount} of ${total} Completed (${pct}%)`;
+    };
+    updateProgress("tatkal-checklist-progress-fill", "tatkal-checklist-progress-text");
+    updateProgress("dash-checklist-fill", "dash-checklist-text");
 }
 
 window.toggleChecklistItem = async function(itemKey, isChecked) {
     try {
-        const res = await fetch(`/api/checklist/${itemKey}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ item_key: itemKey, checked: isChecked })
-        });
+        const res = await fetch(`/api/checklist/${itemKey}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ item_key: itemKey, checked: isChecked }) });
         if (res.ok) loadChecklist();
-    } catch (err) {
-        console.error("Checklist update error:", err);
-    }
+    } catch (e) {}
 };
 
 async function resetChecklist() {
     try {
         const res = await fetch("/api/checklist/reset", { method: "POST" });
-        if (res.ok) {
-            showToast("↺ Checklist reset to default.");
-            loadChecklist();
-        }
-    } catch (err) {
-        showToast("⚠️ Could not reset checklist.");
-    }
+        if (res.ok) { showToast("↺ Checklist reset to default."); loadChecklist(); }
+    } catch (e) { showToast("⚠️ Could not reset checklist."); }
 }
 
 // Helpers
 function playAlertChime() {
     try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
-
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-    } catch (err) {}
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
 }
 
 function triggerNotification(title, message) {
     if (!("Notification" in window)) return;
-    if (Notification.permission === "granted") {
-        new Notification(title, { body: message });
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification(title, { body: message });
-            }
-        });
+    if (Notification.permission === "granted") new Notification(title, { body: message });
+    else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(p => { if (p === "granted") new Notification(title, { body: message }); });
     }
 }
 
@@ -1419,31 +828,22 @@ function copyToClipboard(text) {
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text);
     } else {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.opacity = "0";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
+        const ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.focus(); ta.select();
         document.execCommand("copy");
-        document.body.removeChild(textArea);
+        document.body.removeChild(ta);
     }
 }
 
 function showToast(msg) {
-    const container = document.getElementById("toast-container");
+    const container = $("toast-container");
     if (!container) return;
-
     const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.textContent = msg;
-
+    toast.className = "toast"; toast.textContent = msg;
     container.appendChild(toast);
     setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(100%)";
-        toast.style.transition = "all 0.3s ease";
+        toast.style.opacity = "0"; toast.style.transform = "translateX(100%)"; toast.style.transition = "all 0.3s ease";
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
@@ -1453,7 +853,4 @@ function escapeHtml(str) {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-function escapeJs(str) {
-    if (!str) return "";
-    return str.replace(/'/g, "\\'");
-}
+function escapeJs(str) { return str ? str.replace(/'/g, "\\'") : ""; }
