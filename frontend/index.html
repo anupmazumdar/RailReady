@@ -6,6 +6,7 @@
     <title>RailReady - Railway Journey, Train Information & Tatkal Assistant</title>
     <meta name="description" content="Local offline railway assistant for train search, live running status, route timelines, journey planning, and Tatkal preparation. Independent of IRCTC.">
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="/static/css/mobile.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
@@ -35,6 +36,9 @@
                     <span class="status-dot"></span>
                     <span id="current-ist-time">Loading IST Time...</span>
                 </div>
+                <button id="btn-toggle-mobile" class="btn btn-primary btn-sm" title="Switch to Mobile App Experience">
+                    📱 Mobile App View
+                </button>
                 <button id="btn-manual-irctc" class="btn btn-secondary btn-sm" title="View official IRCTC web link">
                     🌐 Open IRCTC Manually
                 </button>
@@ -640,8 +644,346 @@
         </footer>
     </div>
 
+    <!-- ================= MOBILE APP ROOT (Where is My Train Reference Experience) ================= -->
+    <div id="mobile-app-root" class="mobile-app-root">
+        <!-- Mobile Side Drawer & Backdrop (Image 4) -->
+        <div id="mobile-drawer-backdrop" class="mobile-drawer-backdrop"></div>
+        <aside id="mobile-side-drawer" class="mobile-side-drawer" aria-label="Side Navigation Menu">
+            <div class="drawer-header">
+                <div class="drawer-avatar">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="3" width="16" height="16" rx="3"></rect>
+                        <path d="M4 11h16M12 3v8M8 15h.01M16 15h.01M6 19l-2 2M18 19l2 2"></path>
+                    </svg>
+                </div>
+                <div class="drawer-title-group">
+                    <h3 class="drawer-app-title">Where is My Train</h3>
+                    <span class="drawer-version">v 7.1.5.963234518</span>
+                </div>
+            </div>
+            <nav class="drawer-menu-list">
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-update-timetable">
+                    <span class="drawer-item-icon">📥</span>
+                    <span class="drawer-item-label">Update Timetable</span>
+                    <span class="drawer-badge-pill">few seconds ago</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-language">
+                    <span class="drawer-item-icon">🌐</span>
+                    <span class="drawer-item-label">Language</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-select-city">
+                    <span class="drawer-item-icon">🏢</span>
+                    <span class="drawer-item-label">Select City (for metro/local)</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-toggle-mode">
+                    <span class="drawer-item-icon">🌙</span>
+                    <span class="drawer-item-label">Change light/dark mode</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-clear-recent">
+                    <span class="drawer-item-icon">✕</span>
+                    <span class="drawer-item-label">Clear Recent Searches</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-settings">
+                    <span class="drawer-item-icon">⚙️</span>
+                    <span class="drawer-item-label">Settings</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-share-app">
+                    <span class="drawer-item-icon">🔗</span>
+                    <span class="drawer-item-label">Share App</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-rate-us">
+                    <span class="drawer-item-icon">⭐</span>
+                    <span class="drawer-item-label">Rate Us</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-report-issue">
+                    <span class="drawer-item-icon">🐛</span>
+                    <span class="drawer-item-label">Report Issue</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-suggest-feature">
+                    <span class="drawer-item-icon">💡</span>
+                    <span class="drawer-item-label">Suggest a feature</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-all-alerts">
+                    <span class="drawer-item-icon">🔔</span>
+                    <span class="drawer-item-label">View all Alerts</span>
+                </a>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-how-to-use">
+                    <span class="drawer-item-icon">❓</span>
+                    <span class="drawer-item-label">How to use this app</span>
+                </a>
+                <div class="drawer-divider"></div>
+                <a href="javascript:void(0)" class="drawer-menu-item" id="drawer-switch-desktop" style="color: #60a5fa;">
+                    <span class="drawer-item-icon">💻</span>
+                    <span class="drawer-item-label">Switch to Desktop Suite</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Top App Bar -->
+        <header class="mobile-top-bar" id="mobile-top-bar">
+            <div class="top-bar-left">
+                <button class="icon-btn" id="m-btn-drawer" aria-label="Open menu">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <button class="icon-btn hidden" id="m-btn-back" aria-label="Go back">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </button>
+                <h2 class="mobile-header-title" id="m-header-title">Where is My Train</h2>
+            </div>
+            <div class="top-bar-right" id="m-header-actions">
+                <button class="icon-btn" id="m-btn-mic" aria-label="Voice search">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                </button>
+                <button class="icon-btn hidden" id="m-btn-share" aria-label="Share">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                </button>
+                <button class="icon-btn hidden" id="m-btn-menu" aria-label="More options">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Mobile Scrollable Body Content Container -->
+        <main class="mobile-content-area" id="mobile-content-area">
+            <!-- ================= MOBILE VIEW 1: HOME (Image 3) ================= -->
+            <section class="m-view active" id="m-view-home">
+                <!-- Station Input Card -->
+                <div class="m-card m-search-card">
+                    <div class="m-station-row">
+                        <div class="m-station-track">
+                            <span class="track-node-circle"></span>
+                            <span class="track-dashed-line"></span>
+                        </div>
+                        <div class="m-station-field">
+                            <span class="m-code-badge" id="m-badge-from">DHN</span>
+                            <input type="text" class="m-station-input" id="m-input-from" value="Dhanbad Junction" placeholder="From Station" list="station-list" autocomplete="off">
+                            <button class="m-clear-btn" id="m-clear-from" aria-label="Clear from station">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="m-swap-divider">
+                        <div class="m-track-arrow">↓</div>
+                        <button class="m-swap-circle-btn" id="m-btn-swap" aria-label="Swap stations" title="Swap stations">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" stroke-width="2.6"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="m-station-row">
+                        <div class="m-station-track">
+                            <span class="track-node-circle"></span>
+                        </div>
+                        <div class="m-station-field">
+                            <span class="m-code-badge" id="m-badge-to">KWP</span>
+                            <input type="text" class="m-station-input" id="m-input-to" value="Khatipura" placeholder="To Station" list="station-list" autocomplete="off">
+                            <button class="m-clear-btn" id="m-clear-to" aria-label="Clear to station">✕</button>
+                        </div>
+                    </div>
+
+                    <button class="m-btn-green" id="m-btn-find-trains">
+                        Find trains
+                    </button>
+                </div>
+
+                <!-- Quick Train Search Box 1 -->
+                <div class="m-card m-quick-card" id="m-quick-card-1">
+                    <span class="m-code-badge">12307</span>
+                    <span class="m-quick-title">Jodhpur Superfast E</span>
+                    <button class="m-clear-btn" aria-label="Clear">✕</button>
+                    <button class="m-green-icon-btn" id="m-quick-search-1" aria-label="Search train 12307">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+                </div>
+
+                <!-- Quick Station Search Box 2 -->
+                <div class="m-card m-quick-card" id="m-quick-card-2">
+                    <span class="m-code-badge">RNC</span>
+                    <span class="m-quick-title">Ranchi Junction</span>
+                    <button class="m-clear-btn" aria-label="Clear">✕</button>
+                    <button class="m-green-icon-btn" id="m-quick-search-2" aria-label="Search station RNC">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+                </div>
+
+                <!-- SEARCH HISTORY Section -->
+                <div class="m-section-header">SEARCH HISTORY</div>
+                <div class="m-history-list" id="m-search-history-list">
+                    <!-- Populated dynamically by mobile.js -->
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 2: SEARCH RESULTS (Image 5) ================= -->
+            <section class="m-view" id="m-view-results">
+                <!-- Filter Pills Bar -->
+                <div class="m-filter-bar">
+                    <button class="m-filter-pill" id="m-pill-date">All Date <span class="pill-arrow">▼</span></button>
+                    <button class="m-filter-pill" id="m-pill-fares">Show fares <span class="pill-arrow">▼</span></button>
+                    <button class="m-filter-pill" id="m-pill-sort">Sort by <span class="pill-arrow">▼</span></button>
+                </div>
+
+                <!-- Route Header Banner -->
+                <div class="m-route-banner" id="m-route-banner">
+                    <span id="m-banner-route-text">DHN - Dhanbad Junction &nbsp;➔&nbsp; JP - Jaipur Junction</span>
+                </div>
+
+                <!-- Train Cards Container -->
+                <div class="m-results-cards" id="m-results-cards">
+                    <!-- Populated dynamically by mobile.js -->
+                </div>
+
+                <!-- Missing Train Prompt Card -->
+                <div class="m-missing-prompt">
+                    <p>Cannot find the train you are looking for?</p>
+                    <a href="javascript:void(0)" id="m-link-report-missing">Report missing train</a>
+                </div>
+
+                <!-- Sticky Bottom Availability Bar -->
+                <div class="m-sticky-bottom-bar" id="m-sticky-seat-bar">
+                    <span>Check seat availability</span>
+                    <span class="arrow-right">›</span>
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 3: TICKETS (Image 1) ================= -->
+            <section class="m-view" id="m-view-tickets">
+                <div class="m-card m-tickets-card">
+                    <!-- Station Row -->
+                    <div class="m-station-row">
+                        <div class="m-station-track">
+                            <span class="track-node-circle"></span>
+                            <span class="track-dashed-line"></span>
+                        </div>
+                        <div class="m-station-field">
+                            <span class="m-code-badge" id="m-tkt-badge-from">DHN</span>
+                            <input type="text" class="m-station-input" id="m-tkt-input-from" value="Dhanbad Junction" placeholder="From Station" list="station-list">
+                            <button class="m-clear-btn" id="m-tkt-clear-from">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="m-swap-divider">
+                        <div class="m-track-arrow">↓</div>
+                        <button class="m-swap-circle-btn" id="m-tkt-btn-swap" aria-label="Swap stations">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#22c55e" stroke-width="2.6"><path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="m-station-row">
+                        <div class="m-station-track">
+                            <span class="track-node-circle"></span>
+                        </div>
+                        <div class="m-station-field">
+                            <span class="m-code-badge" id="m-tkt-badge-to">KWP</span>
+                            <input type="text" class="m-station-input" id="m-tkt-input-to" value="Khatipura" placeholder="To Station" list="station-list">
+                            <button class="m-clear-btn" id="m-tkt-clear-to">✕</button>
+                        </div>
+                    </div>
+
+                    <div class="m-card-divider"></div>
+
+                    <!-- Journey Date Row -->
+                    <div class="m-date-section" id="m-tkt-date-trigger">
+                        <div class="m-date-label">
+                            <span class="cal-icon">📅</span> Journey Date
+                        </div>
+                        <div class="m-date-value" id="m-tkt-date-display">
+                            21 September, Monday
+                        </div>
+                        <input type="date" id="m-tkt-hidden-date" class="hidden-date-picker">
+                    </div>
+
+                    <div class="m-card-divider"></div>
+
+                    <!-- Quota Row -->
+                    <div class="m-quota-section">
+                        <div class="m-quota-label">
+                            <span class="clock-icon">🕒</span> Quota
+                        </div>
+                        <div class="m-quota-selector" id="m-quota-selector-btn">
+                            <span class="m-quota-box" id="m-quota-code">GN</span>
+                            <span class="m-quota-name" id="m-quota-name">General Quota</span>
+                            <span class="m-quota-chevron">▼</span>
+                        </div>
+                    </div>
+
+                    <!-- Book tickets action button -->
+                    <button class="m-btn-green m-btn-with-chevron" id="m-btn-book-confirmtkt">
+                        <span>Book tickets on Confirmtkt</span>
+                        <span class="chevron-right">›</span>
+                    </button>
+                </div>
+
+                <!-- Your Tickets Action Card -->
+                <div class="m-card m-tickets-link-card" id="m-btn-view-confirmtkt-tickets">
+                    <div class="m-tkt-icon-label">
+                        <span class="m-ticket-glyph">🎟️</span>
+                        <span>Your tickets on Confirmtkt</span>
+                    </div>
+                    <span class="chevron-right">›</span>
+                </div>
+            </section>
+
+            <!-- ================= MOBILE VIEW 4: PNR (Image 2) ================= -->
+            <section class="m-view" id="m-view-pnr">
+                <div class="m-card m-pnr-card">
+                    <div class="m-pnr-input-wrapper">
+                        <input type="text" class="m-pnr-input" id="m-pnr-input" placeholder="Enter Your PNR No" maxlength="10" autocomplete="off">
+                        <button class="m-pnr-mic-btn" id="m-pnr-mic" aria-label="Mic">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        </button>
+                    </div>
+                    <button class="m-btn-green" id="m-btn-find-pnr">
+                        Find PNR Status
+                    </button>
+                    <div id="m-pnr-result-box" class="m-pnr-result-box hidden"></div>
+                </div>
+
+                <!-- Your tickets on Confirmtkt link card -->
+                <div class="m-card m-tickets-link-card" id="m-pnr-confirmtkt-card">
+                    <div class="m-tkt-icon-label">
+                        <span class="m-ticket-glyph">🎟️</span>
+                        <span>Your tickets on Confirmtkt</span>
+                    </div>
+                    <span class="chevron-right">›</span>
+                </div>
+
+                <!-- PNR SMS banner -->
+                <div class="m-sms-banner">
+                    <div class="m-sms-banner-content">
+                        <div class="m-sms-graphic">
+                            <span class="ticket-art">🎟️</span>
+                            <span class="sms-art">💬</span>
+                        </div>
+                        <div class="m-sms-text">
+                            PNR SMS shared to Where is my Train will appear here
+                        </div>
+                    </div>
+                    <div class="m-sms-actions">
+                        <button class="m-sms-btn" id="m-btn-sms-messages">MESSAGES</button>
+                        <button class="m-sms-btn" id="m-btn-sms-how">HOW</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation Bar (Tabs: SEARCH, PNR, TICKETS) -->
+        <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+            <button class="bottom-nav-tab active" id="m-tab-home" data-mview="home">
+                <span class="b-nav-icon">🚆</span>
+                <span class="b-nav-label">SEARCH</span>
+            </button>
+            <button class="bottom-nav-tab" id="m-tab-pnr" data-mview="pnr">
+                <span class="b-nav-icon">🔍</span>
+                <span class="b-nav-label">PNR</span>
+            </button>
+            <button class="bottom-nav-tab" id="m-tab-tickets" data-mview="tickets">
+                <span class="b-nav-icon">🎟️</span>
+                <span class="b-nav-label">TICKETS</span>
+            </button>
+        </nav>
+    </div>
+
     <!-- Scripts -->
     <script src="/static/js/stations.js"></script>
     <script src="/static/js/app.js"></script>
+    <script src="/static/js/mobile.js"></script>
 </body>
 </html>

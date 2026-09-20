@@ -39,5 +39,11 @@ const MAJOR_STATIONS = [
     { code: "BBS", name: "Bhubaneswar" },
     { code: "R", name: "Raipur Junction" },
     { code: "RNC", name: "Ranchi Junction" },
+    { code: "DHN", name: "Dhanbad Junction" },
+    { code: "KWP", name: "Khatipura" },
+    { code: "CRP", name: "Chandrapura Junction" },
+    { code: "AII", name: "Ajmer Junction" },
+    { code: "BKN", name: "Bikaner Junction" },
+    { code: "JU", name: "Jodhpur Junction" },
     { code: "GKP", name: "Gorakhpur Junction" }
 ];

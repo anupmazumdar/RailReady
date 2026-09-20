@@ -29,6 +29,13 @@ STATION_NAMES = {
     "MAS": "Chennai Central",
     "SBC": "KSR Bengaluru City",
     "GHY": "Guwahati",
+    "DHN": "Dhanbad Junction",
+    "KWP": "Khatipura",
+    "CRP": "Chandrapura Junction",
+    "RNC": "Ranchi Junction",
+    "AII": "Ajmer Junction",
+    "BKN": "Bikaner Junction",
+    "JU": "Jodhpur Junction",
     "PUNE": "Pune Junction"
 }
 
@@ -51,4 +58,12 @@ TRAINS_DATABASE: List[Dict[str, Any]] = [
     {"train_number": "12306", "train_name": "Kolkata Rajdhani (Via Patna)", "type": "Rajdhani", "origin": "NDLS", "destination": "HWH", "departure_time": "16:50", "arrival_time": "12:25", "duration_hours": 19.58, "classes": ['1A', '2A', '3A'], "stops": [_st("NDLS", "16:50", "16:50", 1), _st("CNB", "21:32", "21:37", 1), _st("DDU", "01:47", "01:57", 2), _st("PNBE", "04:15", "04:25", 2), _st("HWH", "12:25", "12:25", 2)]},
     {"train_number": "12002", "train_name": "Bhopal Shatabdi Express", "type": "Shatabdi", "origin": "NDLS", "destination": "BPL", "departure_time": "06:00", "arrival_time": "14:40", "duration_hours": 8.66, "classes": ['CC', 'EC'], "stops": [_st("NDLS", "06:00", "06:00", 1), _st("BPL", "14:40", "14:40", 1)]},
     {"train_number": "12724", "train_name": "Telangana Express", "type": "Superfast", "origin": "NDLS", "destination": "HYB", "departure_time": "16:00", "arrival_time": "17:10", "duration_hours": 25.16, "classes": ['1A', '2A', '3A', 'SL'], "stops": [_st("NDLS", "16:00", "16:00", 1), _st("BPL", "01:20", "01:30", 2), _st("NGP", "07:10", "07:15", 2), _st("SC", "15:55", "16:00", 2), _st("HYB", "17:10", "17:10", 2)]},
+    {"train_number": "12987", "train_name": "Ajmer SF Express", "type": "Superfast", "origin": "DHN", "destination": "JP", "departure_time": "03:12", "arrival_time": "23:15", "duration_hours": 20.05, "classes": ['2A', '3A', 'SL', '2S'], "stops": [_st("DHN", "03:12", "03:12", 1), _st("KWP", "22:48", "22:50", 1), _st("JP", "23:15", "23:15", 1)]},
+    {"train_number": "12307", "train_name": "Jodhpur Superfast Express", "type": "Superfast", "origin": "DHN", "destination": "JP", "departure_time": "03:25", "arrival_time": "23:35", "duration_hours": 20.16, "classes": ['1A', '2A', '3A', 'SL'], "stops": [_st("DHN", "03:25", "03:25", 1), _st("KWP", "23:08", "23:10", 1), _st("JP", "23:35", "23:35", 1)]},
+    {"train_number": "12496", "train_name": "Pratap SF Express", "type": "Superfast", "origin": "DHN", "destination": "JP", "departure_time": "02:55", "arrival_time": "22:55", "duration_hours": 20.0, "classes": ['2A', '3A', 'SL'], "stops": [_st("DHN", "02:55", "02:55", 1), _st("KWP", "22:28", "22:30", 1), _st("JP", "22:55", "22:55", 1)]},
+    {"train_number": "22307", "train_name": "Bikaner SF Express", "type": "Superfast", "origin": "DHN", "destination": "JP", "departure_time": "03:25", "arrival_time": "23:35", "duration_hours": 20.16, "classes": ['2A', '3A', 'SL'], "stops": [_st("DHN", "03:25", "03:25", 1), _st("KWP", "23:08", "23:10", 1), _st("JP", "23:35", "23:35", 1)]},
+    {"train_number": "63556", "train_name": "Barkakana - Asansol MEMU", "type": "Passenger", "origin": "CRP", "destination": "DHN", "departure_time": "05:42", "arrival_time": "06:50", "duration_hours": 1.13, "classes": ['2S'], "stops": [_st("CRP", "05:40", "05:42", 1), _st("DHN", "06:50", "06:50", 1)]},
+    {"train_number": "15661", "train_name": "Ranchi - Kamakhya Express", "type": "Mail/Express", "origin": "CRP", "destination": "DHN", "departure_time": "22:50", "arrival_time": "23:55", "duration_hours": 1.08, "classes": ['2A', '3A', 'SL'], "stops": [_st("CRP", "22:45", "22:50", 1), _st("DHN", "23:55", "23:55", 1)]},
+    {"train_number": "18619", "train_name": "Godda Intercity Express", "type": "Mail/Express", "origin": "CRP", "destination": "DHN", "departure_time": "23:25", "arrival_time": "00:35", "duration_hours": 1.16, "classes": ['3A', 'SL', '2S'], "stops": [_st("CRP", "23:20", "23:25", 1), _st("DHN", "00:35", "00:35", 2)]},
+    {"train_number": "18622", "train_name": "Patliputra Express", "type": "Mail/Express", "origin": "CRP", "destination": "DHN", "departure_time": "00:12", "arrival_time": "01:10", "duration_hours": 0.96, "classes": ['1A', '2A', '3A', 'SL', '2S'], "stops": [_st("CRP", "00:10", "00:12", 1), _st("DHN", "01:10", "01:10", 1)]},
 ]
