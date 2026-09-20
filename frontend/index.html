@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tatkal Booking Preparation Assistant</title>
+    <meta name="description" content="Local offline organizer for preparing journey details, passenger data, and countdown reminders before manually booking Tatkal tickets on the official IRCTC portal.">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Prominent Compliance Notice Banner -->
+        <aside class="compliance-banner" id="compliance-banner" aria-label="Compliance Notice">
+            <span class="compliance-icon" aria-hidden="true">🛡️</span>
+            <p class="compliance-text">
+                <strong>Local Preparation Assistant Only:</strong> This application prepares information and provides reminders only. It operates 100% offline and <strong>does NOT</strong> connect to, control, scrape, or automate the IRCTC website. All bookings must be completed manually by you on the official IRCTC portal.
+            </p>
+        </aside>
+
+        <!-- Main Header -->
+        <header class="app-header">
+            <div>
+                <h1 class="brand-title" id="app-title">
+                    <span>🚆</span> Tatkal Preparation Assistant
+                </h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">
+                    Personal offline organizer & reminder assistant
+                </p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <div class="header-status-badge" id="system-status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="current-ist-time">Loading IST Time...</span>
+                </div>
+                <button id="btn-manual-irctc" class="btn btn-secondary btn-sm" title="View official IRCTC web link">
+                    🌐 Open IRCTC Manually
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Grid Content -->
+        <main class="dashboard-grid">
+            <!-- Left Column: Journey Planner & Countdown -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                
+                <!-- Live Countdown Showcase -->
+                <section class="glass-card" id="section-countdown" aria-labelledby="countdown-heading">
+                    <div class="card-header">
+                        <h2 class="card-title" id="countdown-heading">
+                            <span>⏱️</span> Tatkal Opening Countdown
+                        </h2>
+                        <span id="countdown-status-badge" class="countdown-status-badge">NO JOURNEY ACTIVE</span>
+                    </div>
+
+                    <div class="countdown-box" id="countdown-box">
+                        <div class="countdown-digits-wrapper">
+                            <div class="digit-block">
+                                <div class="digit-value" id="timer-days">00</div>
+                                <div class="digit-label">Days</div>
+                            </div>
+                            <div class="digit-block">
+                                <div class="digit-value" id="timer-hours">00</div>
+                                <div class="digit-label">Hours</div>
+                            </div>
+                            <div class="digit-block">
+                                <div class="digit-value" id="timer-minutes">00</div>
+                                <div class="digit-label">Mins</div>
+                            </div>
+                            <div class="digit-block">
+                                <div class="digit-value" id="timer-seconds">00</div>
+                                <div class="digit-label">Secs</div>
+                            </div>
+                        </div>
+                        <p id="countdown-message" class="countdown-notice">
+                            Enter journey details below to calculate expected opening time.
+                        </p>
+                    </div>
+
+                    <div style="background: rgba(11, 15, 25, 0.6); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase;">Expected Opening (IST)</div>
+                            <div id="display-opening-time" style="font-weight: 600; color: #93c5fd; font-family: var(--font-mono); font-size: 0.95rem;">--</div>
+                        </div>
+                        <button id="btn-test-notification" class="btn btn-secondary btn-sm" title="Verify notification chime">
+                            🔔 Test Alert
+                        </button>
+                    </div>
+                    <p style="font-size: 0.78rem; color: var(--warning); margin-top: 8px; font-style: italic;">
+                        * Expected opening time — verify current IRCTC rules before booking.
+                    </p>
+                </section>
+
+                <!-- Journey Planner Card -->
+                <section class="glass-card" id="section-journey" aria-labelledby="journey-heading">
+                    <div class="card-header">
+                        <h2 class="card-title" id="journey-heading">
+                            <span>🗺️</span> Journey Configuration
+                        </h2>
+                    </div>
+
+                    <form id="form-journey">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="input-from-station">From Station</label>
+                                <input type="text" id="input-from-station" list="station-list" placeholder="e.g. NDLS (New Delhi)" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="input-to-station">To Station</label>
+                                <input type="text" id="input-to-station" list="station-list" placeholder="e.g. BCT (Mumbai Central)" required>
+                            </div>
+                        </div>
+                        <datalist id="station-list"></datalist>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="input-journey-date">Journey Date</label>
+                                <input type="date" id="input-journey-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="select-tatkal-type">Tatkal Quota Type</label>
+                                <select id="select-tatkal-type" required>
+                                    <option value="AC">AC Classes (Opens 10:00 AM IST)</option>
+                                    <option value="NON_AC">Non-AC Sleeper/2S (Opens 11:00 AM IST)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="input-train">Preferred Train</label>
+                                <input type="text" id="input-train" placeholder="e.g. 12952 - TEJAS RAJ EXP" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="select-class">Class</label>
+                                <select id="select-class" required>
+                                    <option value="3A">3A - AC 3 Tier</option>
+                                    <option value="2A">2A - AC 2 Tier</option>
+                                    <option value="3E">3E - AC 3 Economy</option>
+                                    <option value="1A">1A - AC First Class</option>
+                                    <option value="CC">CC - AC Chair Car</option>
+                                    <option value="EC">EC - Exec. Chair Car</option>
+                                    <option value="SL">SL - Sleeper</option>
+                                    <option value="2S">2S - Second Sitting</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-save-journey" class="btn btn-primary btn-block">
+                            💾 Save Journey & Compute Opening Time
+                        </button>
+                    </form>
+                </section>
+            </div>
+
+            <!-- Right Column: Passenger Preparation & Booking Checklist -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                
+                <!-- Passenger Preparation Card -->
+                <section class="glass-card" id="section-passengers" aria-labelledby="passenger-heading">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title" id="passenger-heading">
+                                <span>👥</span> Passenger Preparation
+                            </h2>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">Max 4 passengers for Tatkal</span>
+                        </div>
+                        <button id="btn-copy-all-passengers" class="btn btn-accent btn-sm" title="Copy all details to clipboard">
+                            📋 Copy All Details
+                        </button>
+                    </div>
+
+                    <!-- Passenger List -->
+                    <div id="passenger-container" class="passenger-list">
+                        <!-- Rendered dynamically -->
+                    </div>
+
+                    <!-- Add Passenger Form -->
+                    <div id="add-passenger-panel" style="background: rgba(11, 15, 25, 0.4); padding: 16px; border-radius: var(--radius-md); border: 1px dashed var(--border-subtle); margin-top: 12px;">
+                        <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: #93c5fd;">+ Add New Passenger</h3>
+                        <form id="form-add-passenger">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="input-passenger-name">Full Name (Max 16 chars)</label>
+                                    <input type="text" id="input-passenger-name" maxlength="16" placeholder="As per Govt ID" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="input-passenger-age">Age (1-125)</label>
+                                    <input type="number" id="input-passenger-age" min="1" max="125" placeholder="e.g. 32" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="select-passenger-gender">Gender</label>
+                                    <select id="select-passenger-gender" required>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                        <option value="TRANSGENDER">Transgender</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="select-passenger-berth">Berth Preference</label>
+                                    <select id="select-passenger-berth">
+                                        <option value="No Preference">No Preference</option>
+                                        <option value="Lower">Lower</option>
+                                        <option value="Middle">Middle</option>
+                                        <option value="Upper">Upper</option>
+                                        <option value="Side Lower">Side Lower</option>
+                                        <option value="Side Upper">Side Upper</option>
+                                        <option value="Window Side">Window Side</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="select-passenger-meal">Meal Preference</label>
+                                    <select id="select-passenger-meal">
+                                        <option value="None">None / Not Applicable</option>
+                                        <option value="Veg">Veg</option>
+                                        <option value="Non-Veg">Non-Veg</option>
+                                        <option value="Jain">Jain</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 6px;">
+                                    <button type="submit" id="btn-add-passenger" class="btn btn-secondary btn-block">
+                                        Add Passenger
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Pre-Booking Checklist Card -->
+                <section class="glass-card" id="section-checklist" aria-labelledby="checklist-heading">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title" id="checklist-heading">
+                                <span>✅</span> Pre-Booking Readiness Checklist
+                            </h2>
+                            <span id="checklist-progress-text" style="font-size: 0.8rem; color: var(--text-muted);">0 of 8 Completed</span>
+                        </div>
+                        <button id="btn-reset-checklist" class="btn btn-secondary btn-sm" title="Reset all checkboxes">
+                            ↺ Reset
+                        </button>
+                    </div>
+
+                    <div class="checklist-progress-bar-bg">
+                        <div id="checklist-progress-fill" class="checklist-progress-bar-fill"></div>
+                    </div>
+
+                    <div id="checklist-container" class="checklist-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Manual IRCTC Modal -->
+        <div class="modal-overlay" id="modal-irctc-guide" aria-modal="true" role="dialog" aria-labelledby="modal-title">
+            <div class="modal-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 id="modal-title" style="font-family: var(--font-display); font-size: 1.3rem; color: #fff;">
+                        🌐 Manual IRCTC Website Access
+                    </h3>
+                    <button id="btn-close-modal" class="btn btn-secondary btn-sm" aria-label="Close modal">✕</button>
+                </div>
+
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
+                    In strict compliance with railway regulations, this application does not launch, control, or interact with external browsers. Please manually open the official IRCTC website:
+                </p>
+
+                <div class="url-box">
+                    <span class="url-text" id="official-irctc-url">https://www.irctc.co.in/</span>
+                    <button id="btn-copy-url" class="btn btn-primary btn-sm">Copy Link</button>
+                </div>
+
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 12px; border-radius: var(--radius-sm); margin-top: 16px;">
+                    <h4 style="font-size: 0.85rem; color: #fde68a; margin-bottom: 6px;">Manual Booking Protocol:</h4>
+                    <ol style="font-size: 0.82rem; color: #cbd5e1; padding-left: 20px; line-height: 1.6;">
+                        <li>Open your regular browser manually and go to the official URL.</li>
+                        <li>Log in 5-10 minutes prior to Tatkal opening (10:00 AM for AC, 11:00 AM for Non-AC).</li>
+                        <li>Have your payment method (eWallet, UPI, NetBanking) ready.</li>
+                        <li>When booking opens, use the "Copy All Details" button here to quickly reference passenger info.</li>
+                        <li>Manually solve the CAPTCHA, verify OTP, and authorize payment.</li>
+                    </ol>
+                </div>
+
+                <div style="text-align: right; margin-top: 20px;">
+                    <button id="btn-modal-done" class="btn btn-secondary">Understood</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications Container -->
+        <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+        <!-- Footer -->
+        <footer style="margin-top: 40px; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 20px; font-size: 0.82rem; color: var(--text-dim);">
+            <p>Tatkal Booking Preparation Assistant • Offline Personal Organizer • Fully Independent of IRCTC</p>
+            <p style="margin-top: 4px;">Indian Railways Act 1989 Section 143 Compliant • No Automation • No Scraping</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/stations.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
